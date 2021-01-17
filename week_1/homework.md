@@ -94,3 +94,48 @@ Example:
 >         (replace (first s))
 >         (switch-iter (butfirst s)))))
 > ```
+
+## Question 4
+
+Write a predicate `ordered?` that takes a sentence of numbers as its argument and returns a true value if the numbers are in ascending order, or a false value otherwise.
+
+> See `ordered?.scm`:
+>
+> ```scheme
+> (define (ordered-pair? a b)
+>   (< a b))
+>
+> (define (ordered? numbers)
+>   (if (empty? numbers)
+>       false
+>       (ordered-pair? (first numbers) (first (butfirst numbers)))))
+> ```
+
+## Question 5
+
+Write a procedure `ends-e` that takes a sentence as its argument and returns a sentence containing only those words of the argument whose last letter is E:
+
+```scheme
+> (ends-e '(please put the salami above the blue elephant))
+(please the above the blue)
+```
+
+> See `ends-e.scm`:
+>
+> ```scheme
+> (define (ends-in-e? w)
+>  (equal? (last w) 'e))
+>
+> (define (filter predicate w)
+>  (if
+>   (predicate w)
+>   w
+>   '()))
+>
+> (define (ends-e s)
+>  (if (empty? s)
+>      '()
+>      (sentence
+>       (filter ends-in-e? (first s))
+>       (ends-e (butfirst s)))))
+> ```
