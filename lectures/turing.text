@@ -1,0 +1,260 @@
+      An explanation of Turing computability in a Scheme framework.
+
+Part I:
+
+Every Scheme procedure can be turned into a number.   How?  Every
+character we can type is one of 127 different items in a standard
+alphabet "ASCII" used by our computers.
+
+For example, ( is 040 and ) is 041. We can encode the compound
+expression (+ 3 4) as 040043032051032052041
+
+Here is a part of the Unix Manual Page of ASCII standard characters
+correspondences to decimal numbers.  (man ascii prints it).
+ 
+     Decimal - Character
+ 
+     | 32 SP | 33  ! | 34  " | 35  # | 36  $ | 37  % | 38  & | 39  ' |
+     | 40  ( | 41  ) | 42  * | 43  + | 44  , | 45  - | 46  . | 47  / |
+     | 48  0 | 49  1 | 50  2 | 51  3 | 52  4 | 53  5 | 54  6 | 55  7 |
+     | 56  8 | 57  9 | 58  : | 59  ; | 60  < | 61  = | 62  > | 63  ? |
+     | 64  @ | 65  A | 66  B | 67  C | 68  D | 69  E | 70  F | 71  G |
+     | 72  H | 73  I | 74  J | 75  K | 76  L | 77  M | 78  N | 79  O |
+     | 80  P | 81  Q | 82  R | 83  S | 84  T | 85  U | 86  V | 87  W |
+     | 88  X | 89  Y | 90  Z | 91  [ | 92  \ | 93  ] | 94  ^ | 95  _ |
+     | 96  ` | 97  a | 98  b | 99  c |100  d |101  e |102  f |103  g |
+     |104  h |105  i |106  j |107  k |108  l |109  m |110  n |111  o |
+     |112  p |113  q |114  r |115  s |116  t |117  u |118  v |119  w |
+     |120  x |121  y |122  z |123  { |124  | |125  } |126  ~ |127 DEL|
+
+
+Let's go through an exercise that will generate all functions of one argument
+as a correspondingly encoded number.
+
+We are going to start each number with 
+
+  (  d  e  f  i  n  e     (  f     x  )
+040100101102105110101032040102032120041
+
+and then we will stick numbers 0, 1, 2, 3, 4, 5, .... indefinitely
+on the end of this.  Since Scheme allows us to use integers of arbitrary
+length, this is not a problem. Since the names ``f'' and ``x'' are 
+merely standing in for the name of the function and the argument,
+our choice does not represent any real restriction, either.
+
+Still not every number (by a long shot) that begins this way is a a
+valid program, or even a string of characters in ASCII.  But if we
+keep stringing digits along this way, eventually we will encounter the
+encoding for ANY program that takes one argument.
+
+Here is one program in the list that computes forever if it is 
+applied to an argument.
+
+(define (f x) (f x))    which appears in the list at number
+040100101102105110101032040102032120041032040102032120041041
+
+Here is one that halts rather fast
+
+(define (f x) 3)  which is also
+040100101102105110101032040102032120041032051041
+
+Numbers like these are sometimes referred to as Goedel numbers
+(after logician Kurt Goedel).
+
+Part II
+
+Now let us write a procedure HF (HF for "Halting-Function") that has
+two number arguments k and n.  We want HF to distinguish between those
+two functions above, just as you did, saying which terminates and which does
+not.
+
+How can we write HF?
+
+We might design HF to convert the number k back to characters,
+see if it defines some function f.  (There are many details here...
+it may generate an error message, or it will just be waiting for more
+parentheses perhaps.  If it is waiting, we can actually have the
+computer "type as many right parentheses as needed" to make it
+respond. If there is no error message, HF could do any of a number of
+things including invoking (f n) to see what happens.)
+
+Let's not sweat the details for the moment and concentrate
+on what we want HF to do, specifically:
+
+If computing (f n) stops after a finite time, then HF returns the
+sentence '(halting k n).  This means "program number k halts on input
+n".
+
+If  (f n) does not terminate, then HF returns the sentence
+'(non-halting k n) meaning   "program number k does not halt on input n".
+
+Naturally, HF can't just "run" (f n), because if (f n) doesn't stop,
+neither will HF.  So HF has to be clever and see if there is, for
+example, an infinite recursion like that in (define (f x)(f(f x)))
+leading to non-halting behavior.  In general it would not be a good
+idea to run f.
+
+Just how clever must HF be?
+
+Here is a first draft of HF. This version works directly from the
+numbers k and n without converting k to a program!
+
+(define (HF k n)
+  (cond ((equal? k
+		 040100101102105110101032040102032120041032051041)
+         (se 'halting k n))
+        ((equal? k 
+		 040100101102105110101032040102032120041032040102032120041041)
+         (se 'non-halting k n))
+        ;; insert more checks in here
+        (else '(encountered bug in program HF))))
+
+You may argue that this is a sleazoid approach, but it works for a lot
+of cases:  two values of k, and ANY values of n. Those two values of
+k are in fact the two sample functions we gave in Part I.
+
+Part III
+
+Now consider a function we will refer to as the non-halting function
+
+(define (f x) 
+
+  (define (goes-forever) (goes-forever)) ;; a function that does not halt
+
+  (define (HF k n)
+    ;; the Halting Function
+    ;; some clever programmer must fill the rest of this in
+    )
+
+  (if (equal? 'halting (first (HF x x))) (goes-forever) 'stop))
+
+
+1. First note that this non-halting function f must be in the list
+somewhere, since we can convert it to ASCII encoding.  In fact it is
+in the list at a specific number
+W=0401001011021051101010320401020321200410320320320401001011021....
+It is a very simple function, consisting of the HF function and two
+more lines of Scheme.
+
+2. Next, note that if some program with number k=x halts on argument
+n=x, then for this non-halting f then (f x) goes on forever.  If
+program number y does not halt on argument y, then (f y) halts (and
+returns 'stop).  Think about this until you are sure you understand
+it.
+
+3. Now consider (f W).  Does this go forever or return stop?
+
+The answer to this question:  Look at statement 2.  It says (f W) goes
+on forever if program number W halts on argument W.  Of course
+program number W is f, the non-halting program.  Therefore "running
+program number W on argument W"  is exactly the same as (f W).
+
+So let's say that again:  (f W) goes on forever if (f W) halts.
+
+This is a contradiction.
+
+Either our logic is wrong and/or at least one of our hypotheses is wrong.
+
+In fact, you can study this for quite a while looking for a way out,
+but others who have done so find we are left with this:
+
+
+We can't write a program like HF that appears at some a finite place in
+the numbering of all scheme programs.
+
+It is not just that we haven't been able to write it yet.
+
+No HF algorithm (a scheme program with a finite description) 
+that solves the "Halting Problem" can exist.  And of course
+no program that requires a solution to the problem can exist,
+either.
+
+Where does this lead?
+
+                   Church's Thesis
+
+There is a commonly held belief (especially among computer scientists)
+that everything that can be computed mechanically can be computed by
+Scheme (or any other sufficiently powerful language).  This is a
+belief, not a theorem because it is somewhat circular in its premise,
+and is often referred to as [Alonzo] Church's thesis).  With this as
+background, the Halting Function is said to be NOT COMPUTABLE.  There
+can be no scheme function that computes HF.  Restated: there can be no
+function HF that can determine FOR ANY ARBITRARY FUNCTION IN SCHEME
+where it terminates or not.
+
+Of course there may be a Scheme function that determine when SOME
+functions terminate. We even wrote one above.  But we have proved that
+an HF that works for each and every function simply cannot exist.
+
+
+Do these limits circumscribe what can be "computed" by humans? Certainly
+by most scientific definitions of computing.
+
+         How Important are Uncomputable Functions?
+
+Actually not very: Noncomputable functions tend to be of interest in formal
+logic and philosophy.  We can easily prove some functions to be
+computable, even if we have not the faintest clue as to how to compute
+them.
+
+For example, the answer to  "Is there life on other planets?" is 
+computed by one of these two functions
+
+(define (life-on-other-planets) #t)
+(define (life-on-other-planets) #f)
+
+so it is clearly computable.  We don't know which of them is
+correct, however.
+
+A computer practitioner rarely encounters this issue. Rather, the
+classification of a problem as tractable (having a polynomial-time
+cost) or intractable (having a cost that is worse than polynomial)
+tends to be of much more practical concern than the
+computable/non-computable.  (P/NP lecture by RMK)
+
+Historical note: A discussion of computability and the Halting Problem is
+often phrased in terms of Turing Machines (after the mathematician and
+pioneering computer scientist A.M.Turing).  Whle the Turing Machine is
+quite different in appearance from Scheme programs, it turns out to be
+computationally  equivalent.
+
+                 Review of the argument
+
+The essential argument in Scheme can be made very briefly:
+
+Suppose you have a procedure "halts?" that takes two arguments,
+a function f and an argument n for that function. 
+(halts? f n)  returns #t if (f n) halts after a finite time.
+(halts? f n)  returns #f if (f n) computes forever.
+
+
+Now define
+
+(define (try proc)
+  ;; (try proc) goes forever if (proc proc) halts
+  ;; (try proc) halts        if (proc proc) goes forever
+
+  (if (halts? proc proc) (goes-forever) 'stop))
+
+
+(try try)  produces the essential contradiction.   That is,
+
+(try try) goes forever if (try try) halts
+(try try) halts        if (try try) goes forever.
+
+Thus there can be no function "halt?" written in Scheme.
+
+......
+Thanks for comments from Brian Harvey, Robert Wilensky.
+
+
+
+
+
+
+
+
+
+
+

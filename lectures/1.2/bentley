@@ -1,0 +1,16 @@
+		t1(N) = 3.0 N^3		t2(N) = 19,500,000 N
+
+	N	CRAY-1 Fortran		TRS-80 Basic
+
+	10	3.0 microsec		200 millisec
+       100	3.0 millisec		2.0 sec
+      1000	3.0 sec			20 sec
+     10000	49 min			3.2 min
+    100000	35 days			32 min
+   1000000	95 yrs			5.4 hrs
+
+
+
+
+			from _Programming_Pearls_
+			by Jon Bentley (Addison-Wesley, 1986)

@@ -1,0 +1,194 @@
+These are notes taken by Mary Jennings from
+the Oct 1, 1993 lecture (videotape) for CS60a.
+
+Distinguished Lecturer Series
+October 1, 1993
+
+Speaker:  Professor Richard Karp, University of California at Berkeley
+                             and International Computer Sciences Institute
+
+Topic:  Combinatorial Search Problems
+
+     A combinatorial search problem requires that the solver find an
+arrangement of a finite set of objects so as to satisfy certain constraints.
+How do we distinguish easy from hard and intrinsically hard from temporarily
+hard problems?  A few examples:
+
+Telephone network (Steiner tree) problem:  We are given a (finite) set S of
+     points.  This set S is the union of two proper subsets A and B;
+     i.e., S = A U B, where A and B are both non-empty.  All of the points
+     in set A must receive telephone service, so we must connect them by
+     establishing telephone lines between them.  However, the points in set B
+     are optional in the sense that we may connect some or all of them to
+     the system of lines serving set A, but we do not have to connect any
+     of them to that system.  This is a challenging problem when the set
+     S is large.  However, removing the optional points (the subset B above)
+     from S makes the problem easier.
+
+Assignment problem:  We are given n workers to do n jobs.  The problem is to
+     match the workers one-to-one with the jobs while minimizing cost.
+
+     So, a combinatorial search problem requires that the solver find,
+from among a very large, structured set of possible solutions, one solution
+that satisfies the problem's constraints.  Variants of this type of problem
+include decision and optimization problems.  More examples:
+
+Scheduling:  School scheduling, NFL football games, airline flights
+
+Routing networks:  Vehicles, phone calls, (computer) bits, oil, gas
+
+VLSI circuit design:  placement and interconnection of components
+
+Computational biology:  DNA molecules, etc.
+
+Cryptography
+
+     Many combinatorial search problems can be expressed by graphs.  Examples
+include:
+
+Eulerian Walk Problem:  Given a graph, determine whether there is a closed
+     walk that covers each edge exactly once.  It turns out that such a
+     walk exists if and only if the graph is connected and each vertex has
+     an even number of neighbors.
+
+Hamiltonian Circuit Problem:  Given a graph, determine whether there is a
+     closed walk that visits each vertex exactly once.  This problem is hard.
+     (All known solution algorithms require exponential time.)
+
+     The Hamiltonian Circuit Problem gives rise to a question:  Are
+combinatorial explosions inevitable?  In other words, are such problems
+really that hard or do they seem so only because we have not yet found a
+more efficient algorithm for solving them?  This question leads to a
+discussion of definitions that clarify the boundary between tractable and
+intractable problems.
+
+     In 1965, J. Edmonds formulated the following definition:  A problem is
+tractable if it can be solved in a number of steps bounded by a polynomial
+in the size of the input.  His attempt to formalize this concept was a step
+in the right direction, but it was necessary to establish some conventions
+before we could apply this definition in a practical and far-reaching way.
+
+These conventions apply only to decision problems:
+
+     Input is encoded as strings of 0's and 1's.
+     Each input is either accepted or rejected.
+     We denote by P the set of all decision problems solvable in polynomial
+     time via an algorithm on a Turing machine.
+
+To define P more formally, we say that a problem L lies in P if there is an
+algorithm A such that
+     A accepts all strings in L,
+     A rejects all strings not in L,
+     there is a polynomial f(x) such that, for every string x, A terminates
+          in (at most) |f(|x|)| steps, where |x| is the length of x.
+
+Polynomial time reducibility:  A decision problem L is reducible to a
+decision problem M if there is a polynomial time computable function F,
+mapping strings to strings, such that a string x is accepted in L if and
+only if the string F(x) is accepted in M.
+
+     Note that the definition above yields a classification of problems with
+respect to computability, because if L is reducible to M and M lies in P,
+then L lies in P.  In other words, M is at least as hard as L.
+
+Satisfiability Problem: [This type of problem comes to us from the realm of
+     logic. A proposition is a statement which is either true or false.
+     A propositional variable is a symbol (e.g., A) which represents
+     such a statement.  In the system of logic under consideration,]
+     proposition A is true if and only if ~A (read not A) is false.  Given
+     propositional variables A, B, C and their corresponding literals A, ~A,
+     B, ~B, C, ~C, etc., we can form disjunctive and conjunctive clauses which
+     have values true or false.  For example,
+
+"OR":  A U ~B U ~D U F  means
+       A (is true) OR ~B (is true) OR ~D (is true) or F (is true)
+     Such a clause is true whenever any one of the statements A, ~B, ~D, F is
+     true.
+
+"AND":  A AND B AND C  (actually written with intersection symbols, but I
+                         have none on my keyboard)
+     Such a clause is true if and only if all of the statements A, B, and C
+     are true.
+
+In the abstract, a formula such as those in the examples above is true if there
+exists an assignment of truth values to variables that makes the formula
+true.  Some applications:
+
+Three-Coloring Problem:  Given a graph, decide whether vertices can be
+     colored with three colors such that no two adjacent vertices are the
+     same color.  The Three-Coloring Problem is reducible to the
+     Satisfiability Problem.  The variables are R(i) for vertex red,
+     B(i) for vertex blue, and G(i) for vertex green. The clauses are
+     {for each vertex i,
+          R(i) U G(i) U B(i)
+          ~R(i) U ~B(i), ~R(i) U ~G(i), ~B(i) U ~G(i)} and
+     {for each edge (i,j)
+          ~R(i) U ~R(j), ~B(i) U ~B(j), ~G(i) U ~G(j)}.
+
+The fact that Three-Coloring can be reduced to Satisfiability, you will
+recall, implies that Satisfiability is at least as hard as Three-Coloring.
+
+     Now we come to another class of problems.  We denote by NP the class
+of decision problems that are checkable in polynomial time.  In other words,
+given a solution to a problem in NP, we can check it in polynomial time.  More
+formally,
+
+A decision problem L lies in NP if and only if there exist a polynomial f(x)
+and a decision algorithm A such that x lies in L if and only if there is a
+witness y of length bounded by a polynomial in the length of x such that
+A accepts (x,y).
+
+For example,
+
+Composite numbers:  An integer n is composite if it can be factored into the
+     product of two integers each distinct from n.  If an integer is
+     composite, a witness is one of its factors, [because if someone claims
+     to have found a factorization of n, he (she) should be able to name
+     the factors.  Suppose he (she) says that m is a factor of n.  Then we
+     can verify or disprove his/her claim by applying the division algorithm.
+     If we divide n by m and get a zero remainder, then the claim is true.
+     Otherwise, it is false.]
+
+We know that the set P is contained in the set NP.  Whether P = NP, however,
+is an open question.  What is the relationship between P and NP?  If we ever
+succeed in proving that P = NP, we shall also have proven that
+
+     (1)  finding a solution to a decision problem is no harder than checking
+          the solution,
+     (2)  finding a proof is no harder than checking a proof,
+     (3)  many seemingly intractable problems are solvable in polynomial
+          time.
+
+     Finally, we come to the class of problems which we call NP-Complete.
+A decision problem L is NP-Complete if
+
+     (1)  L is in NP,
+     (2)  L is so general that every problem in NP can be transformed into L.
+
+In other words, if L is NP-Complete, then L lies in P if and only if P = NP.
+
+     In 1971, Cook's Theorem established that Satisfiability was NP-Complete.
+Therefore, if Satisfiability turns out to be in P, then P will have been
+proven equal to NP.
+
+     Karp's List (1972) tells us that the Hamiltonian Circuit Problem,
+the Three-Coloring Problem, and the Steiner Tree Problem are all NP-Complete.
+(In 1973 a mathematician by the name of Levin (sp?) in the U.S.S.R. proved
+similar results.)
+
+     The moral of this story, then, is that if a problem is NP-Complete,
+we cannot expect to solve it in polynomial time.  Instead, we must look
+for an algorithm which can handle most instances of the problem, or, in the
+case of an optimization problem, for an algorithm that gives a near optimal
+solution.
+
+
+
+{I took these notes on Professor Karp's lecture.  I hope I have done it justice.
+If you find errors, please attribute them to my limitations as note-taker and
+not to Professor Karp.  Occasionally, I took the liberty of inserting a brief
+comment which I thought might clarify some of the material.  I tried, in each
+such case, to enclose my remark in square brackets.  Sometimes it was not
+possible to do so, however, without making the reading extremely cumbersome.
+
+                                     ---- Mary Jennings}

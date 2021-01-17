@@ -1,0 +1,7 @@
+tr -d '.,;:"\!\[]()' < summary > nopunct
+tr '	' ' ' < nopunct > notab
+tr ' ' '\n' < notab > oneword
+tr '[A-Z]' '[a-z]' < oneword > lowcase
+sort < lowcase > sorted
+uniq < sorted > nodup
+join -v1 nodup words > errors

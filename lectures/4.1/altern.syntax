@@ -1,0 +1,35 @@
+Alternative syntax
+
+instead of  (if pred (sequence exp1 ...) (sequence exp2 ...))
+
+try
+
+(if pred then exp1 exp2 ..  elseif pred then exp1 exp2 ... else exp1 exp2 ..)
+
+or
+
+if pred then ... elseif pred .. then  exp  endif
+.............
+
+instead of (set! a b)
+
+allow  ( a := b)
+
+or   (a <= b)
+
+or even
+  ;   a:= b ;
+
+
+instead of
+(define (f x) (if (= x 0) 1 (* x (f (- x 1)))))
+
+allow
+
+
+f ( x ) := if x = 0 then 1 else x * f (x - 1) ;
+
+or
+
+f(x):=if x=0 then 1 else x*f(x-1) ;   {this would require changes in (read)}
+

@@ -1,0 +1,12 @@
+(define make-counter
+  (let ((total 0))
+    (lambda ()
+      (let ((mine 0))
+	(lambda (msg)
+	  (cond ((eq? msg 'next)
+		 (set! total (+ total 1))
+		 (set! mine (+ mine 1))
+		 (list mine total))
+		((eq? msg 'total) total)
+		((eq? msg 'mine) mine)
+		(else (error "No such message"))))))))

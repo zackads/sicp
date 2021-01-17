@@ -1,0 +1,17 @@
+to assq :thing :list
+if equalp :thing first first :list [op last first :list]
+op assq :thing bf :list
+end
+
+to spell :card
+pr (se assq bl :card :ranks "of assq last :card :suits)
+end
+
+to hand :cards
+if emptyp :cards [stop]
+spell first :cards
+hand bf :cards
+end
+
+make "ranks [[a ace] [2 two] [3 three] [4 four] [5 five] [6 six] [7 seven] [8 eight] [9 nine] [10 ten] [j jack] [q queen] [k king]]
+make "suits [[h hearts] [s spades] [d diamonds] [c clubs]]

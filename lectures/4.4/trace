@@ -1,0 +1,45 @@
+query==> (append ?a ?b (aa bb))
+
+(unify-match (append ?a ?b (aa bb))         ; MATCH ORIGINAL QUERY
+	     (append () ?1y ?1y)            ; AGAINST BASE CASE RULE
+	     ())                            ; WITH NO CONSTRAINTS
+
+RETURNS: ((?1y . (aa bb)) (?b . ?1y) (?a . ()))
+PRINTS:  (append () (aa bb) (aa bb))
+
+(unify-match (append ?a ?b (aa bb))                ; MATCH ORIGINAL QUERY
+	     (append (?2u . ?2v) ?2y (?2u . ?2z))  ; AGAINST RECURSIVE RULE
+	     ())                                   ; WITH NO CONSTRAINTS
+
+RETURNS: ((?2z . (bb)) (?2u . aa) (?b . ?2y) (?a . (?2u . ?2v)))
+         [call it F1]
+
+    (unify-match (append ?2v ?2y ?2z)   ; MATCH BODY OF RECURSIVE RULE
+		 (append () ?3y ?3y)    ; AGAINST BASE CASE RULE
+		 F1)                    ; WITH CONSTRAINTS FROM F1
+
+    RETURNS: ((?3y . (bb)) (?2y . ?3y) (?2v . ()) [plus F1])
+    PRINTS:  (append (aa) (bb) (aa bb))
+
+    (unify-match (append ?2v ?2y ?2z)                  ; MATCH SAME BODY
+		 (append (?4u . ?4v) ?4y (?4u . ?4z))  ; AGAINST RECURSIVE RULE
+		 F1)                                   ; WITH F1 CONSTRAINTS
+
+    RETURNS: ((?4z . ()) (?4u . bb) (?2y . ?4y) (?2v . (?4u . ?4v))
+	      [plus F1])  [call it F2]
+
+        (unify-match (append ?4v ?4y ?4z)   ; MATCH BODY FROM NEWFOUND MATCH
+		     (append () ?5y ?5y)    ; AGAINST BASE CASE RULE
+		     F2)                    ; WITH NEWFOUND CONSTRAINTS
+
+        RETURNS: ((?5y . ()) (?4y . ?5y) (?4v . ()) [plus F2])
+        PRINTS:  (append (aa bb) () (aa bb))
+
+        (unify-match (append ?4v ?4y ?4z)                  ; MATCH SAME BODY
+		     (append (?6u . ?6v) ?6y (?6u . ?6z))  ; AGAINST RECUR RULE
+		     F2)                                   ; SAME CONSTRAINTS
+
+        RETURNS: ()                                        ; BUT THIS FAILS
+
+done 
+query==> 

@@ -1,0 +1,26 @@
+
+
+(define (list-of-squares nums)
+  (define (square (car nums))
+    (* (car nums) (car nums)))
+  (if (null? nums)
+      nil
+      (cons (square (car nums))
+	    (list-of-squares (cdr nums)))))
+
+
+
+
+(set! (cdr x) nil)
+
+
+
+
+
+(define (assq sym alis)
+  (cond ((null? alis) nil)
+	((eq? sym (caar alis))
+	 (car alis))
+	(else
+	 (set! alis (cdr alis))
+	 (assq sym alis))))

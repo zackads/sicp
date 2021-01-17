@@ -1,0 +1,57 @@
+Why do you need a header in a table like that on page 214
+of SICP?
+
+The list  ((a . 1) (b . 2) (c . 3))  would seem to be adequate
+for using assq  -- indeed, the list that is actually used,
+
+ (*table* (a . 1) (b . 2) (c . 3)) seems to have a redundant
+header... if you look at "lookup"
+
+all it does is check for (assq key (cdr table))  , so why have *table*
+there?
+
+The answer is in insert!:  If we have a particular table TTT in mind
+all the time, then insertion could be done by
+
+(set! TTT (cons (cons key value) TTT)
+
+but if we do not know the NAME of the table, but only want to modify
+some value given to us we cannot do
+
+(set!   <whatgoeshere???> newtable)
+
+If we modify the table in the middle,  we can "splice"  "b" into the
+list after the first element...
+
+L =     (a c d)
+
+by  (set-cdr! L (cons b (cdr L)))
+
+now L = (a b c d)
+
+but how can we splice into L before the FIRST element?
+
+how can we change L to be  (z a b c) ?
+
+The answer is, not easily.
+
+(set-car! L 'z)  changes L to  (z a b c).
+
+If we produce a new table by (cons 'z ..)
+we don't have L's name, just it's value  (a b c), so we can't use
+set!...
+
+So the usual way of doing this insertion nicely is to have a
+HEADER, and insert after it.
+
+
+(Here's a non-recommended way of inserting in front of a header-less
+first value in a list, in a way that mutates the list.  Can you
+see what it is doing?  Do you understand its limitations?  Hint:
+is there a minimum length for l ?)
+
+(define (bash1 l item)
+  ;; change l =( a b c)  to  (item a b c) by mutation
+  (set-cdr! l (cons (car l) (cdr l)))
+  (set-car! l item)
+  l)

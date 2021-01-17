@@ -1,0 +1,14 @@
+Streams:  Major Magic
+
+It's easy to get distracted by the magic here. There are three big
+ideas though:
+
+1. Efficiency -- decouple the order of evaluation from the form of
+the program. Evaluate something when you NEED TO USE IT.
+
+2. The possibility of representing (potentially) infinite data
+
+3. A return to functional representation of data (as opposed to
+   OOP and "state".)
+
+

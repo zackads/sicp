@@ -1,0 +1,47 @@
+;;; Scheme does have "arrays"...
+
+
+(define foo #(0 1 2 3 4 5 'a 'b 'c))
+
+(define bar (make-vector 12 0))
+
+(define 2d-vector #( #(1 0 0) #(0 1 0) #(0 0 1)))
+
+;; standard scheme prints them this way;
+;; chez scheme is slightly different ... #3(0 1 2)
+;; 2d-vector is #3(#3(1 0) #3(0 1 0) #3(0 0 1))
+
+;; setting elements in .. (vector-set! bar 0 'a)
+;; getting elements' values (vector-set! bar 0)
+
+
+;;------- common lisp does this differently.  Think meta-circular eval..
+
+;;common lisp uses setf instead of set!
+
+  SCHEME                COMMON LISP
+
+(set-car! x y)   is    (setf (car x) y)
+(set-cdr! x y    is    (setf (cdr x) y)
+
+(vector-set! v n y) is (setf (vector-ref v n) y)
+
+(put x y z)      is    (setf (get x y) z)
+
+This is such a general idea that Common Lisp also allows the following
+
+(setf (cadr x) y)    which is like (set-car! (cdr x) y)) in scheme
+
+(setf (car(cdr x)) y)
+
+(setf (cadr (vector-ref v 3)) 'a)
+
+And even user-specified "setf-methods" for "objects"
+
+(setf (temperature room) 68)
+
+
+.........  This means that the line in MCE which evaluates
+forms (set! ......)  must be made cleverer.
+
+

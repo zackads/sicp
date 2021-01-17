@@ -1,0 +1,219 @@
+Rough notes on proving programs 
+for CS60a lecture of Oct 8. 1993
+
+I. Nature of programming vs. software engineering
+
+  A. Enormous cost of programming in industry: business, science, tech.
+     gov't. $80-200 or more  billion/year.
+     Debugging and Maintenance (including upgrading) consume 80\%
+     of costs.  
+
+  B. anecdotes about errors
+     1.  D0 3 I=1,10  vs. DO 3 I = 1.10 causing satellite to fall
+     2.  If lose-track-of-missile then self-destruct
+     3.  Nuclear Reactor shut-down codes. Humans keep over-riding.
+  
+
+One idea to solve these problems:
+
+
+II. Proving programs correct
+
+   A. Large expenditures for math/science to develop technology
+     1. languages for specifications (correct means it does what
+        it is supposed to do; who says what it is supposed to do?)
+     
+     2. better programming languages e.g. Pascal, Ada
+         a. say everything twice or three times and compare
+         b. refuse to do some things (too loose)
+     3. program-proving programs
+
+   B. Disillusionment sets in
+     1. A proof in math is a social process 
+         a. prof runs down hall to show colleagues
+         b. cf. Fermat's last theorem proof
+         c. who would ever look at a complicated program proof?
+
+     2. Proofs yield to "Quality Assurance" / Testing / Checking
+        a. Test suites (auto generated, sometimes)
+        b. re-testing after fixes (many of which introduce bugs)
+        c. real-time checking of answers  e.g. c= a/b checked by b*c=a?
+
+III. Lessons from the program proof industry
+
+    A. Reasoning about programs
+    (example: C.A.R. Hoare, assertions, loop invariants)
+    It is possible, by logic, and some formalism to improve your
+    chances of 
+     1. getting the program right in the first place,
+     2. finding errors in specification vs. actuality
+    
+    B. Better formal languages for program specification
+
+    C. Better Formal descriptions of programming languages: formal
+       semantics in some mathematical algebraic system.
+
+IV. What should we be doing to improve: make software 
+    more like hardware, or bridges etc? E.g.
+     1. Reliable. Works in the mud. Keeps on ticking...? Error checking..
+     2. Redundant/safe? build 3 programs?
+     3. testable. feedback on success?
+     4. scaling up? standard interfaces, modules..}       
+
+Example about reasoning about programs: 
+  the notion of invariants, pre-conditions and post-conditions.
+
+  (The URN example).
+
+The urn game is based on an example in the video tape:
+
+	Edsger W. Dijkstra
+	University of Texas at Austin
+	"Reasoning About Programs"
+	Recorded May 28, 1990
+	Run Time:  55:22 minutes 
+
+ Two examples are given in how to reason about programs (using Hoare-style
+{P}S{Q} pre and post conditions, simple iteration with an invariant, and
+termination).  Dijstra`s view about the necessity of proofs, and that before
+one writes a program one must have invariants, and therefore "finding one"
+for a loop is not a problem, must strike almost every listener who has
+>>written<< a program as hollow. His explanation of how to prove a program
+(by miraculously chosing just the right invariants, no more no less) will
+additionally strike anyone who has tried to >>prove<< a program correct as
+hollow as well. To the uninitiated however, his explanations might seem
+convincing.
+
+Example one.  An urn with  >2  white and black pebbles. The
+game:  As long as there are two or more pebbles, take two out.
+Depending on the colors of the two pebbles, do one of three things:
+
+w+b -> replace the w one in the urn. discard the b.
+w+w -> paint one w to b, and put it back in the urn. discard the other w.
+b+b -> replace one b back in the urn. discard the other b.
+
+What happens?  How can we reason about the algorithm that simulates
+this game?
+
+Proof of termination.  
+
+finite urn ; each turn removing one pebble net --> eventually
+get to only one pebble.
+
+question: what color is the pebble?
+
+hint:  if there were an even number of white pebbles in the urn
+to start, what would happen? 
+prove your answer by means of loop invariant.
+
+let b be number of black pebbles, w be number of white
+
+initially
+{b+w>2}   {{ also lots of other things like b>=0, w>=0, w mod 2 = k with 
+              k either 1 or 0}}
+
+while (b+w>=2) do
+
+  {b+w=n>=2, w mod 2 = k}  LOOP INVARIANT
+
+   choose 2 pebbles:  BW or WB or BB:  b:=b-1
+                      WW            :  w:=w-2; b:= b+1
+
+{b+w =n-1; also w has decreased by 0 or 2. I.e. w mod 2 = k still,
+ b+w >=1}
+  od
+{b+w>=2 is false, b+w>=1 is true so.....
+ b+w=1. w mod 2 = k}
+
+So the final result is either b=1 w=0  or b=0, w=1.  if w mod 2 = 1, then
+w must be 1.  Thus if you start with an odd w, you end with one w pebble.
+Otherwise you end with 1 black pebble.
+................
+
+;;Dijkstra's urn game.
+
+(define (play initialwhite initialblack)
+  ;; {(remainder initialwhite) = 0  or = 1}
+  (playgame (make-urn initialwhite initialblack)))
+
+(define (playgame urn)
+  (if (< (pebbles-in urn) 2)
+      ;;{w+b <2}
+      ;; {(remainder w 2) = (remainder initialwhite 2)}
+      (analyze-end urn)
+      ;; {w+b>2}
+      (let ((newurn (random-draw urn)))
+	;; {one of the 3 branches in random-draw has been executed}
+
+	;;{either b:=b-1,  by rule 1 or 2
+        ;;        w:=w-2, b:=b+1  by rule 3,
+        ;;        hence b+w is now one less, or  b+w<=2.
+        ;; also  (remainder w 2) is unchanged.}
+	(playgame newurn))))
+
+
+;;let an urn be a list of 2 integers: number of white and number of black
+
+(define (white-count urn) (first urn))
+
+(define (black-count urn) (cadr urn))
+
+(define (pebbles-in urn)
+;; how many pebbles total are there in the urn
+ (+ (white-count urn)(black-count urn)))
+
+(define (make-urn w b)
+;; construct an urn with w white and b black pebbles.
+;; could check to make sure that w and b are pos integers, w>0, b>0, and w+b>1
+  (list w b))
+
+(define (analyze-end urn)
+  ;;{w+b=1}
+;; { (remainder w 2) = (remainder INITIAL-w 2)}
+  ;; what is left in the urn if only one pebble is there?
+  (format  "The last pebble is ~s"
+	   (if
+	    ;;{w=1, last pebble is white}
+	    (> (white-count urn) 0) 'white
+	    ;;{b+w=1, w= 0, hence b=1}
+	    'black)))
+
+
+(define (random-draw urn)
+  ;;{w+b>2  in urn }
+  (let ((draw-w (min (white-count urn)(random 3))))
+    ;; draw-w, # of white pebbles to pull out is a random number
+    ;;  0 or 1 or 2 not to exceed the actual number of while pebbles
+    ;; if draw-w  is n whites, there are (- 2 n) blacks
+    ;;{w=0,1,2}
+
+    (cond ((= draw-w 0) ;2 blacks  --> replace just one; decrease b by 1.
+	   ;;{change by rule 1}
+	   (make-urn (white-count urn)
+		     (- (black-count urn) 1))
+	   ;;{new b := b-1,  w unchanged}
+	   )
+	  ;;{change by rule 2}
+	  ((= draw-w 1) ; 1 b, 1 w --> replace the w one;
+	   (make-urn (white-count urn)
+		     (- (black-count urn) 1))
+	   ;;{ new b := b-1, w unchanged}
+	   )
+	  ;;{change by rule 3}
+	  ((= draw-w 2) ; 2 w, paint one w to b and put it back
+	   (make-urn (- (white-count urn) 2)
+		     (+ (black-count urn) 1))
+	   ;; {new w := w-1, new b := b+1}
+	   ))
+    ;;{for any of the three branches, (remainder w 2) is unchanged
+    ;;  because w either stays the same or decreases by 2}
+    ))
+	    
+	 
+
+
+
+
+
+
+

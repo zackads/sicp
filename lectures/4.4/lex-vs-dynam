@@ -1,0 +1,57 @@
+;;; Section 4.1.1
+
+(define (eval exp env) ;;lexical (usual) binding
+  (cond ((self-evaluating? exp) exp)
+        ((quoted? exp) (text-of-quotation exp))
+        ((variable? exp) (lookup-variable-value exp env))
+        ((definition? exp) (eval-definition exp env))
+        ((assignment? exp) (eval-assignment exp env))
+        ((lambda? exp) (make-procedure exp env))
+        ((conditional? exp) (eval-cond (clauses exp) env))
+        ((application? exp)
+         (apply (eval (operator exp) env)
+                (list-of-values (operands exp) env)))
+        (else (error "Unknown expression type -- EVAL" exp))))
+
+(define (eval exp env) ;;dynamic binding version
+  (cond ;; <<<same stuff until...>>>
+        ((application? exp)
+         (apply (eval (operator exp) env)
+                (list-of-values (operands exp) env)
+                env))                    ;***
+        (else (error "Unknown expression type -- EVAL" exp))))
+
+;;; note: now apply takes a third argument, the env when EVAL is called
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define (apply procedure arguments)  ;; lexical (usual) binding
+  (cond ((primitive-procedure? procedure)
+         (apply-primitive-procedure procedure arguments))
+        ((compound-procedure? procedure)
+         (eval-sequence (procedure-body procedure)
+                        (extend-environment
+                         (parameters procedure)
+                         arguments
+                         (procedure-environment procedure))))
+        (else
+         (error "Unknown procedure type -- APPLY" procedure))))
+
+
+(define (apply procedure arguments env)  ;***  dynamic version
+  ;; note  extra ENV argument
+  ;;   <<same stuff...>>
+         (eval-sequence (procedure-body procedure)
+                        (extend-environment
+                         (parameters procedure)
+                         arguments
+                         env)))          ;***
+
+;;;; important-- we extent the current environment with the environment
+;;;; that eval was given, NOT with the environment that was tacked on to
+;;;; the procedure we are applying 
+        (else
+         (error "Unknown procedure type -- APPLY" 
+                procedure))))
+
+;;; AND THAT's ALL

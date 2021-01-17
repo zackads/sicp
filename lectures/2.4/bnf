@@ -1,0 +1,32 @@
+Formal Syntax of Scheme (R4RS section 7.1, p. 32)
+  (61A course reader second part, page 84)
+  (excerpts)
+
+
+<expression>  ==>  <variable> | <literal> | <procedure call>
+			| <lambda expression> | <conditional>
+			| <assignment> | <derived expression>
+
+<lambda expression>  ==>  ( lambda <formals> <body> )
+
+<formals>  ==>  ( <variable>* ) | <variable> | ( <variable>+ . <variable> )
+
+<body>  ==>  <definition>* <sequence>
+
+<definition>  ==>  ( define <variable> <expression> )
+			| ( define ( <variable> <def formals> ) <body> )
+			| ( begin <definition>* )
+
+<def formals>  ==>  <variable>* | <variable>+ . <variable>
+
+<sequence>  ==>  <command>* <expression>
+
+<command>  ==>  <expression>
+
+<conditional>  ==>  ( if <test> <consequent> <alternate> )
+
+<test>  ==>  <expression>
+
+<consequent>  ==>  <expression>
+
+<alternate>  ==>  <expression> | <empty>

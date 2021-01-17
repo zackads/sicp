@@ -1,0 +1,17 @@
+(define (pre-order tree)
+  (cond ((null? tree) '())
+	(else (print (entry tree))
+	      (pre-order (left-branch tree))
+	      (pre-order (right-branch tree)) )))
+
+(define (in-order tree)
+  (cond ((null? tree) '())
+	(else (in-order (left-branch tree))
+	      (print (entry tree))
+	      (in-order (right-branch tree)) )))
+
+(define (post-order tree)
+  (cond ((null? tree) '())
+	(else (post-order (left-branch tree))
+	      (post-order (right-branch tree))
+	      (print (entry tree)) )))

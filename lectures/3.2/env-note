@@ -1,0 +1,44 @@
+            A Note on Environments, frames, bindings, etc.
+
+
+A frame is just a table.  A variable is just an ENTRY (or place) in the
+table.  E.g., if we have a frame like this one
+
+           x: 1
+           y: 2
+
+we can think of x and y as labelling the entries in the table, in which
+are written 1 and 2.  The places where 1 and 2 live are the variables.
+
+When we say that we bind or rebind the variable x, we mean that we
+create an entry for it in new frame we are using to extend the
+environment.  "set!" simply puts a new value in the table entry
+corresponding to a given name.  
+
+All this terminology may be confusing because, in the book, they tend to
+confuse variables and names.  That is, they say ``create a new binding
+for the variable x'', while it would be more accurate to say ``create a
+new place (i.e., variable) named x and give it a value''.  (Note that if
+you just do a "set!", no one (including A&S) says that we have created a
+new binding for x; rather, everyone would say that the binding has
+changed.  What's really changed is simply the value of the variable
+(i.e., the value in the place) corresponding to x in the frame; the
+association between x and this place remains unchanged.
+
+Similarly, when they say, ``the variable x is bound to 4 in this
+frame'', it would be more accurate to say ``the new variable
+corresponding to x in this frame has the value 4''.  The difference is
+that the first expression gives that impression that there is only one
+variable x, and that it is rebound each time a function is called that
+uses x as a formal parameter, whereas it is more accurate to say that
+there are many variables corresponding to x, each one created when such
+a function is called.
+
+It's important to emphasize that most of the time, the extensions to
+environments that are created are thrown away after their use, i.e.,
+when the call to the function that created them finishes.  This is
+emphatically NOT the case when the call to a function returns a newly
+created function.  That is the one instance in which a frame will
+persist, even though the function call that created it has ceased to
+exist.
+

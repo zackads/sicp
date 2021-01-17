@@ -1,0 +1,144 @@
+Here are several metacircular evaluator questions from past 60A final exams.
+For each of these questions, you should go through these three steps:
+
+(a) Is this primarily a change to eval (based on the current environment) or
+    to apply (based on a procedure's execution environment)?
+
+(b) Which specific subprocedure should be changed?
+
+(c) Then write the code.
+
+The first two steps are most important!
+
+--------------------------------------------------
+
+1.  Modify the metacircular evaluator to accept a new kind of cond clause,
+as explained below.  We are interested in the situation in which some
+expression is computed as the predicate part of a clause, and then if that
+expression is non-nil, the same expression is part of the desired return
+value.  For example, suppose we have an association list like
+
+((I . 1) (V . 5) (X . 10) (L . 50) (C . 100) (D . 500) (M . 1000))
+
+The tool we have for looking things up in such a list is assq, which
+returns the entire pair whose car matches its argument:
+
+> (assq 'L roman-number-list)
+(L . 50)
+
+Suppose we want to find the numeric value for a given letter.  We could
+define the following procedure:
+
+(define (value letter)
+  (cond ((assq letter roman-number-list)
+         (cdr (assq letter roman-number-list)))
+        (else nil)))
+
+but this involves computing the call to assq twice.  Alternatively,
+we could use a let outside the cond, but that's awkward if
+the cond has several clauses and only one requires this value.
+For example, using a let would be tricky if the example were
+
+(define (value letter-or-number)
+  (cond ((number? letter-or-number) letter-or-number)
+        ((assq letter-or-number roman-number-list)
+         (cdr (assq letter-or-number roman-number-list)))
+        (else nil)))
+
+Here is how this would look using the new syntax you are going to invent:
+
+(define (value letter-or-number)
+  (cond ((number? letter-or-number) letter-or-number)
+        ((assq letter-or-number roman-number-list) => cdr)
+        (else nil)))
+
+The first and third clauses are unchanged.  The second clause uses the new
+syntax.  It has exactly three elements; the second of those three is the
+keyword => to indicate the use of this syntax, and the third is an
+expression whose value is a one-argument procedure (the symbol cdr).  If the
+value of the first expression is non-nil, then cond should evaluate the
+third element and apply that function to the value of the first element.
+
+
+
+2. (This is the one we did in class.)
+
+(a) Modify the metacircular evaluator so that it always evaluates
+the arguments in a procedure call from left to right, regardless
+of the order of evaluation in the underlying Scheme.
+
+(b) Does your modified evaluator always evaluate the procedure
+expression before it evaluates the argument expressions, regardless
+of the underlying Scheme?  For example, in evaluating the expression
+
+(foo a b)
+
+will your evaluator always look up FOO before looking up A?  Explain
+why or why not.
+
+(c) Show an example interaction with Scheme in which the result of the
+interaction depends on whether or not the procedure expression is evaluated
+before the argument expressions.
+
+
+
+3. Modify the metacircular evaluator to allow type-checking of arguments to
+procedures.  Here is how the feature should work.  When a new procedure is
+defined, a formal parameter can be either a symbol as usual or else a list
+of two elements.  In this case, the second element is a symbol, the name of
+the formal parameter.  The first element is an expression whose value is
+a predicate function.  That function should return #t if the argument
+is valid.  For example, here is a procedure foo that has type-checked
+parameters num and list:
+
+> (define (foo (integer? num) ((lambda (x) (not (null? x))) list))
+    (nth num list))
+FOO
+> (foo 3 '(a b c d e))
+C
+> (foo 3.5 '(a b c d e))
+Error: wrong argument type -- 3.5
+> (foo 2 '())
+Error: wrong argument type -- ()
+
+In this example we define a procedure foo with two formal parameters, named
+num and list.  When foo is invoked, the evaluator will check to see that the
+first actual argument is an integer and that the second actual argument is
+not empty.  The expression whose value is the desired predicate function
+should be evaluated with respect to foo's defining environment.
+
+
+
+4.  Suppose you have a procedure that takes several arguments, e.g.,
+
+(define (foo a b c d e f) ...)
+
+Now you want to invoke this procedure.  You are providing values explicitly
+for the parameters a and b, but you have the remaining arguments in a list.
+If you had all the arguments in a list, you could say
+
+(apply foo arglist)
+
+but instead you have to say something awkward like
+
+(apply foo (cons a-value (cons b-value arglist)))
+
+We'd like to invent a new notation, allowing you to invoke the procedure
+by saying
+
+(foo a-value b-value . arglist)
+
+In this notation, arglist must be a symbol whose value is a list.  Your job
+is to modify the metacircular evaluator to accept this notation.
+
+NOTE 1:  Although this looks similar to the notation
+
+(define (foo a b . args) ...)
+
+used to create a procedure that accepts variable numbers of arguments, it's
+not the same feature.  This time we're talking about the invocation
+of the procedure, not the definition of the procedure.
+
+NOTE 2:  You should assume that the (read) procedure has already taken
+care of translating the dot notation into an improper list, which is what
+you'll see as the expression to be evaluated.

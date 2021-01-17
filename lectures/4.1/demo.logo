@@ -1,0 +1,34 @@
+to second :thing
+output first bf :thing
+end
+
+to twice :thing
+print :thing
+print :thing
+end
+
+to pigl :word
+if vowelp first :word [output word :word "ay]
+output pigl word bf :word first :word
+end
+
+to vowelp :let
+output memberp :let "aeiou
+end
+
+to piglatin :sent
+if emptyp :sent [output []]
+output fput pigl first :sent piglatin bf :sent
+end
+
+to factorial :n
+if :n=0 [output 1]
+output :n * factorial :n-1
+end
+
+to triangle :num :wd
+if :num=0 [stop]
+repeat :num [type :wd]
+print []
+triangle :num-1 :wd
+end

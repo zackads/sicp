@@ -1,0 +1,59 @@
+CS 61A                Environment Model of Evaluation
+
+Every expression is either atomic or compound.
+
+At any time there is a CURRENT FRAME, initially the global frame.
+
+1.  atomic expressions
+
+    (a)  Numbers, strings, #T, and #F are self-evaluating.
+
+    (b)  If the expression is a symbol, find the FIRST AVAILABLE binding.
+         (That is, look in the current frame; if not found there, look in
+         the frame "behind" the current frame; and so on until the global
+         frame is reached.)
+
+2.  Compound expressions
+
+If the car of the expression is a symbol that names a special form, then
+follow its rules (2(b) below).  Otherwise the expression is a procedure
+invocation.
+
+    (a)  Procedure invocation
+
+        Step 1:  Evaluate all the subexpressions (using these same rules).
+        Step 2:  Apply the procedure (the value of the first subexpression)
+                 to the arguments (the values of the other subexpressions).
+
+            i.  If the procedure is compound (user-defined):
+                A.  Create a frame with the formal parameters of the procedure
+                    bound to the actual argument values.
+                B.  Extend the procedure's defining environment with this
+                    new frame.
+                C.  Evaluate the procedure body, using the new frame as
+                    the current frame.
+
+                *** ONLY COMPOUND PROCEDURE INVOCATION CREATES A FRAME ***
+
+           ii.  If the procedure is primitive:
+                        Apply it by magic.
+
+    (b)  Special forms
+
+        i.  LAMBDA creates a procedure.  The left circle points to the text
+            of the lambda expression; the right circle points to the
+            defining environment, i.e., to the current environment at the
+            time the lambda is seen.
+
+            *** ONLY LAMBDA CREATES A PROCEDURE ***
+
+       ii.  DEFINE adds a NEW binding to the CURRENT FRAME.
+
+      iii.  SET! changes the FIRST AVAILABLE binding (see 1(b) for the
+            definition of "first available").
+
+       iv.  LET = LAMBDA (2(b)i) + invocation (2(a))
+
+        v.  (define (...) ...) = LAMBDA (2(b)i) + DEFINE (2(b)ii)
+
+       vi.  Other special forms follow their own rules (e.g. COND, IF).

@@ -1,0 +1,28 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+ <head>
+  <title>Index of /~cs61a/su10/lectures/3.5</title>
+ </head>
+ <body>
+<h1>Index of /~cs61a/su10/lectures/3.5</h1>
+  <table>
+   <tr><th valign="top"><img src="/icons/blank.gif" alt="[ICO]"></th><th><a href="?C=N;O=A">Name</a></th><th><a href="?C=M;O=A">Last modified</a></th><th><a href="?C=S;O=A">Size</a></th><th><a href="?C=D;O=A">Description</a></th></tr>
+   <tr><th colspan="5"><hr></th></tr>
+<tr><td valign="top"><img src="/icons/back.gif" alt="[PARENTDIR]"></td><td><a href="/~cs61a/su10/lectures/">Parent Directory</a>       </td><td>&nbsp;</td><td align="right">  - </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="why-streams">why-streams</a>            </td><td align="right">2010-07-07 13:14  </td><td align="right">381 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="streamstate.scm">streamstate.scm</a>        </td><td align="right">2010-07-07 13:14  </td><td align="right">2.2K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="stream2.scm">stream2.scm</a>            </td><td align="right">2010-07-07 13:14  </td><td align="right">508 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="stream1.scm">stream1.scm</a>            </td><td align="right">2010-07-07 13:14  </td><td align="right">462 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="stream0.scm">stream0.scm</a>            </td><td align="right">2010-07-07 13:14  </td><td align="right">171 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="stream-pack.scm">stream-pack.scm</a>        </td><td align="right">2010-07-07 13:14  </td><td align="right">1.2K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="stream-memo.scm">stream-memo.scm</a>        </td><td align="right">2010-07-07 13:14  </td><td align="right">1.2K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="sieve.scm">sieve.scm</a>              </td><td align="right">2010-07-07 13:14  </td><td align="right">268 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="show-stream.scm">show-stream.scm</a>        </td><td align="right">2010-07-07 13:14  </td><td align="right">390 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="prime2.scm">prime2.scm</a>             </td><td align="right">2010-07-07 13:14  </td><td align="right">640 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="prime1.scm">prime1.scm</a>             </td><td align="right">2010-07-07 13:14  </td><td align="right">445 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="prime0.scm">prime0.scm</a>             </td><td align="right">2010-07-07 13:14  </td><td align="right">166 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="ints-from">ints-from</a>              </td><td align="right">2010-07-07 13:14  </td><td align="right"> 76 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="fib.scm">fib.scm</a>                </td><td align="right">2010-07-07 13:14  </td><td align="right">337 </td><td>&nbsp;</td></tr>
+   <tr><th colspan="5"><hr></th></tr>
+</table>
+</body></html>

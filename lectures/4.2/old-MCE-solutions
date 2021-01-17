@@ -1,0 +1,201 @@
+Metacircular evaluator #1
+
+Accept => clause in COND:
+
+This is a change in the COND special form.  All special forms are
+handled by subprocedures of EVAL; this one by EVAL-COND.
+
+(define (eval-cond clist env)
+  (cond ((no-clauses? clist) nil)
+	((else-clause? (first-clause clist))
+	 (eval-sequence (actions (first-clause clist)) env))
+	(ELSE (LET ((VAL (EVAL (PREDICATE (FIRST-CLAUSE CLIST)) ENV)))
+		(IF VAL
+		    (IF (ARROW-CLAUSE? (FIRST-CLAUSE CLIST))
+			(APPLY (EVAL (ARROW-PROC (FIRST-CLAUSE CLIST)) ENV)
+			       (LIST VAL))
+			(EVAL-SEQUENCE (ACTIONS (FIRST-CLAUSE CLIST)) ENV))
+		    (EVAL-COND (REST-CLAUSES CLIST) ENV) ))) ))
+
+(DEFINE (ARROW-CLAUSE? CLAUSE)
+  (EQ? (CADR CLAUSE) '=>))
+
+(DEFINE ARROW-PROC CADDR)
+
+
+
+Metacircular evaluator #2
+
+(a) Evaluate args left-to-right.
+
+This is a change to the rule that says "to evaluate an expression,
+begin by evaluating the subexpressions."  That's in EVAL, more
+precisely in LIST-OF-VALUES:
+
+(define (list-of-values exps env)
+  (cond ((no-operands? exps) '())
+	(else (LET ((FIRST (EVAL (FIRST-OPERAND EXPS) ENV)))
+		(CONS FIRST
+		      (list-of-values (rest-operands exps) env) )))))
+
+(b) Does this version always evaluate the operator first?
+
+No.  That ordering is determined in EVAL itself.  To fix the order,
+we'd have to change
+
+    (apply (eval (operator exp) env)
+	   (list-of-values (operands exp) env) )
+
+to
+
+    (let ((proc (eval (operator exp) env)))
+      (apply proc (list-of-values (operands exp) env) ) )
+
+(c) When does it matter?
+
+> (define x 3)
+> ( (sequence (set! x 50) 1+) x)
+
+prints 51 if the operator is evaluated first, but prints 4 if the
+operand is evaluated first.  (Of course there are many other possible
+answers, and of course the answer has to involve a non-functional
+computation.)
+
+
+
+Metacircular evaluator #3
+
+The change has to do with assigning actual argument values to formal
+parameters.  This is the job of apply, specifically in
+extend-environment, more specifically in make-frame.  Changes below
+are in capital letters.
+
+(define (extend-environment variables values base-env)
+  (adjoin-frame (make-frame variables values BASE-ENV) base-env))
+
+(define (make-frame variables values BASE-ENV)
+  (cond ((and (null? variables) (null? values)) '())
+	((null? variables)
+	 (error "Too many values supplied" values))
+	((null? values)
+	 (error "Too few values supplied" variables))
+	((LIST? (CAR VARIABLES))
+	 (IF (APPLY (EVAL (CAAR VARIABLES) BASE-ENV)
+		    (LIST (CAR VALUES)))
+	     (CONS (MAKE-BINDING (CADAR VARIABLES) (CAR VALUES))
+		   (MAKE-FRAME (CDR VARIABLES) (CDR VALUES) BASE-ENV))
+	     (ERROR "WRONG ARGUMENT TYPE" (CAR VALUES)) ))
+	(else
+	 (cons (make-binding (car variables) (car values))
+	       (make-frame (cdr variables) (cdr values) BASE-ENV) )) ))
+
+
+
+Metacircular evaluator #4
+
+(a) Eval or apply?
+
+The modification must be made in EVAL.  Many people said "this change
+is about arguments to procedures, and it's apply's job to deal with
+arguments."  That's an oversimplified view of things.  When a procedure
+is invoked, there are two steps in dealing with the arguments:
+	1.  Convert the actual argument EXPRESSIONS into actual
+	    argument VALUES.
+	2.  Bind the formal parameters to the actual argument values.
+The second of those is apply's job, but the first requires us to
+evaluate subexpressions: EVAL's job.
+
+The change we are making is part of the evaluation of actual argument
+expressions.  In the example, A-VALUE and B-VALUE are actual argument
+expressions.  ARGLIST is a sort-of actual argument expression whose
+value is a bunch of arguments, rather than a single argument.  Turning
+the name ARGLIST into the list that it represents (in other words,
+evaluating the symbol ARGLIST) is done in eval.
+
+Scoring: 2 points, all or nothing.  A couple of people argued that
+both answers are correct because eval and apply are mutually
+recursive.  True, but, for example, eval-definition is invoked
+directly by eval, whereas make-frame is never invoked by eval except
+through an invocation of apply.
+
+(b) Where specifically?
+
+LIST-OF-VALUES.  This is the procedure that turns all the
+actual argument expressions into actual argument values.  It's
+where we cdr down the list of actual argument expressions, and
+it's where we have to notice the case of an improper list.
+
+Scoring: 2 points.  Part credit (1 point) if you said somewhere
+else and actually got it to work; this was rare but possible, if
+you have eval take over the job of list-of-values.  Also part
+credit if you mentioned two procedures, one of which was list-of-values.
+No credit if you mentioned three or more procedures, which we
+interpreted as wild guessing.
+
+(c) The actual modification:
+
+(define (list-of-values exps env)
+  (cond ((no-operands? exps) '())
+	((SYMBOL? EXPS) (EVAL EXPS ENV))
+        (else (cons (eval (first-operand exps) env)
+                    (list-of-values (rest-operands exps)
+                                    env)))))
+
+The part in capital letters is the only change needed.
+
+Okay, how does it work?  If we are looking at an improper list (that
+is, one in which there is a pair whose cdr isn't a list), sooner or
+later the recursion will give us that cdr as the argument.  We
+recognize an improper list by noticing that EXPS is a symbol, not a
+pair or nil.  (Several people said ATOM? instead of SYMBOL? here.  We
+accepted that answer, because it works if you put the clause after the
+no-operands one, but it's not as precise because nil is an atom, but
+also a proper list.)
+
+Suppose we've found the symbol.  (This is the symbol ARGLIST in the
+example.  Too many people said something about 'ARGLIST in their code!
+Again, the whole idea of programming is to write programs that work in
+general situations, not just solve one example problem.)  What we need
+to do is look up the value of the variable whose name is that symbol.
+We do that by EVAL-ing the symbol.  (We could uselookup-variable-value
+instead, since we know that the expression is a symbol.)  Then what?
+The result is a list of actual argument values, just what we wanted!
+
+Two common mistakes are worth special mention.  The first is to try
+to catch the improper list one step too soon in the recursion, with
+an expression like (SYMBOL? (CDR EXPS)).  This is not necessarily a
+total disaster, because you can almost recover by consing the evaluated
+car onto the evaluated cdr.  But nobody who tried this got it exactly
+right, and in any case it would fail for an example like (FOO . ARGLIST)
+in which there is no individual argument expression to be the car of
+a pair.
+
+Another common mistake was to say (LIST-OF-VALUES (EVAL EXPS ENV)).
+This comes from a misunderstanding of the problem.  The value of the
+variable ARGLIST is supposed to be a list of actual argument values,
+not a list of actual argument expressions.
+
+Those were forgivable errors; if you made either of those mistakes
+it meant that you had a pretty good understanding of the problem and
+of the metacircular evaluator.  There were too many more serious errors
+to catalog, but we'll mention two categories.
+
+One popular category was to write something that would work only for
+the particular example we gave in the problem:
+	* making FOO a special form
+	* checking for 'ARGLIST
+	* requiring exactly two arguments before the dot
+Again, this misses out on the fundamental idea of computer programming.
+
+The other was to look for an improper list with something like
+(EQ? (CAR EXPS) '|.|) -- checking for a dot in the list structure.
+This indicates a misunderstanding of how the Lisp reader works.
+When you type something like (2 . 3) you are not creating a list
+of three elements: two, dot, three.  You are creating a single
+pair whose car is 2 and whose cdr is 3.  Similarly, (a b . c) is
+two pairs; the first has A as its car and a second pair as its
+cdr, while that second pair has B as its car and C as its cdr.
+
+Scoring: 2 points if it's right; 1 point if it's right except for
+some minor problems.
+

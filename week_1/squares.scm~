@@ -1,0 +1,9 @@
+#lang racket
+
+(require berkeley)
+
+(load 'order.scm)
+
+(def (f a b) (+ (g a) b))
+
+(def (g x) (* 3 x))

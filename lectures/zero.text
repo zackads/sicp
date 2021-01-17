@@ -1,0 +1,220 @@
+CS60a guest lecture October 15, 1993
+
+Speaker:  Professor Umesh Vazirani,
+          Department of Electrical Engineering and Computer Science
+          University of California at Berkeley
+
+Topic:  Zero-Knowledge Proofs
+
+     Zero-knowledge protocols are the culmination of approximately two
+decades of work in cryptography.  In cryptography, we deal with two problems,
+communication and identification.
+
+          (1)  Secret communication over a (possibly public) channel
+
+              Alice                                            Bob
+                                    
+               M  --->[encryption] --> [transmission] ------>   ~M
+        (plaintext message)                         (encrypted message)
+
+The diagram above represents a situation in which Alice wishes to send
+a private message to Bob.  She encrypts her original message M before
+sending it.  This keeps anyone (e.g. Carol) who intercepts the message
+during transmission from understanding it.  Bob can read the message
+in plaintext only if he can decrypt the message.  Solving this problem
+efficiently is one of the goals of cryptographic research.
+
+The second problem, and the one we address today, is
+
+
+          (2)  Identification of the parties who are communicating with
+                    each other over that channel
+
+
+ Alice has to be able to identify herself to Bob.  (and vice-versa perhaps).
+To be totally useful, this must be done so that someone else (C) listening
+to the interchange cannot then claim to be Alice, merely by repeating
+what was overheard.
+
+
+If Bob is a computer, one solution to the identification probem (with
+which you are already familiar) is a password.  Unfortunately, if C
+steals A's password, the identification system is compromised, and the
+computer cannot distinguish between A and C.  Zero-knowledge protocols
+provide us with another means of addressing the problem of identification.
+It has the interesting characteristic that C cannot learn A's "password"
+by spying on the communication channel.  C must "steal" something
+that A knows, but does not ever communicate directly -- the solution
+to a very very hard problem.
+
+This is a sketch of the technique, and not a detailed description
+which would, unfortunately, take much longer to develop.
+
+
+This is how a zero-knowledge protocol works:
+
+In order to identify herself uniquely, let Alice choose some problem P which
+is (very) difficult to solve for everyone except Alice.  By proving that she
+can solve the problem without revealing the solution, Alice can prove who she
+is without compromising the security of her identification scheme.
+
+Alice could choose, for example, a factorization problem.  Suppose that p and
+q are prime numbers each about 500 bits long.  Their product N = p * q would
+be approximately 1000 bits long.  Since Alice could choose p and q, and
+therefore N, Alice would know how to factor N.  However, a person who tried
+to factor N without knowing anything about p and q would have to use trial
+division (at least for now, no really fast algorithm for this problem
+is known.)  This could take up to 2^500 operations.  Therefore, while it is
+not impossible for another person to impersonate Alice by producing the
+factorization of N, it is extremely unlikely that anyone will be able to do
+so.  Remember, however, that Alice wants to prove to Bob that she can factor
+N without giving him any new information about the problem; in other words,
+she wants to prove that she can factor N without revealing p or q.  Bob must
+gain no knowledge from his exchange with Alice except that Alice knows
+the factors.
+
+How could Alice choose these random "primes"?  She begins by identifying them
+via Fermat's Little Theorem, which states that if a is an integer and p is a
+prime not dividing a, then a^(p-1) is congruent to 1 modulo p.  This theorem is
+"almost if and only if" in the following sense:  If we try the cases a = 2,
+a = 3, a = 5 and they all work, p is probably prime.  Numbers satisfying
+these three cases so frequently turn out to be primes that computer scientists
+have given them a name: "industrial grade primes."  Moreover, approximately
+one in every five hundred numbers which are 500 bits long turns out to be
+prime, so it would require no more than 500 tests each for Alice to find
+p and q.
+
+The resulting encryption scheme, then, is this: Alice finds p and q as
+explained above, then she publishes N (= p * q) in a public directory.
+This directory also holds (different) large integers for every one
+else who wants to be identified uniquely. Alice's
+ability to factor N is her unique personal identifier.  [In the
+very unlikely event that someone else succeeds in factoring N, that
+person will indeed be able to impersonate Alice, and the security of
+the data which she is protecting by means of this scheme will be
+compromised. That is why N should be large and hard to factor. ]
+
+You may recall the Hamilton Cycle Problem which we encountered in the course
+of Professor Karp's lecture on combinatorial search problems:  Given a graph
+G, is there any way of starting at one vertex and visiting each vertex exactly
+once, with our tour of the graph ending at the vertex where we began?  The
+input for this problem is a graph G(V,E).  The output is "yes" or "no."  When
+the number of vertices is large, this is a very hard problem.  In fact, all
+known solution algorithms are of exponential order.
+
+The Hamilton Cycle Problem provides us with another example of a hard
+problem, and in fact we can map the factoring problem onto this one.
+(How -- we will not discuss here.)  But if you can solve this
+Hamilton Cycle problem you can factor the related integer, and vice-versa.
+
+We will use the Hamilton Cycle Problem as the basis for our
+zero-knowledge protocol.  Our friend Alice can choose to publish a
+graph G [a large one] for which she knows a Hamilton Cycle.  (Because
+she can factor the associated integer in the related factorization
+problem).
+
+To identify herself to Bob she must prove that she knows a Hamilton
+Cycle for the published graph G.  However, she must do so without
+divulging any information about that cycle to Bob.  In particular, Bob
+cannot use any of the "information" he gets from Alice to spoof or
+imitate her.
+
+
+This is how Alice accomplishes her proof:
+
+Conceptually, she finds a private room (excluding Bob) and writes out
+a graph G' on the floor where G' has the same number of vertices as G.
+Say G' has the vertices arranged (we might as well lay these out in a
+large circle).
+
+She establishes a one-to-one correspondence between the vertices 1, 
+2, 3, ... of G and the vertices 1', 2', 3', ... of G'.
+That is, there is a function F
+F:G-->G' satisfying V |--> V' for each vertex V of G.
+
+If G includes an edge connecting vertices 1 and 3, then Alice connects
+F(1) = 1' to F(3) = 3' in the new graph G', etc.
+
+She then covers over all the possible edges of G' with masking tape.
+Not just the edges E', but all the possible edges that could connect
+any two  vertices. Also, the vertices are covered.
+
+
+Now, when Bob asks Alice to prove that she is Alice (by proving that
+she knows a Hamilton Cycle for G), she leads Bob into the room and
+offers him a choice:
+
+       He may ask her to do --> exactly one <-- of the following:
+
+    (1)  Show him that the graph for which she knows a Hamilton Cycle is
+              really G (in disguise).
+
+    (2)  Show him the Hamilton Cycle.
+
+If Bob asks (1), Alice removes ALL the masking tape.  Alice lets Bob
+see the new graph G' which has exactly the same number of edges and
+vertices as G. and Bob can easily check (given F) that it is
+"isomorphic" to the original:  there is an edge from 3 to 4 in G
+if and only if there is an edge from F(3) to F(4) on the floor, etc.
+
+
+If Bob asks (2), Alice exposes the masking
+tape covering only the Hamilton Cycle without exposing the other
+edges or vertices of G'. This can be easily checked by Bob
+to be a Hamilton cycle --- all the tapes that were removed must
+have an edge drawn on the floor under them, and all the vertices
+must have exactly two edges attached to them. But all Bob
+gets from this is some cycle of V vertices.  He could easily produce
+another one himself by randomly permuting the positions of the V
+vertices.
+
+Assuming that Bob is equally likely to ask either question means that
+someone (say Carol) posing as Alice has a problem.  Carol must be able
+to satisfy Bob on both counts. That is, Carol must be able to produce
+either G or the Hamilton Cycle whenever Bob requests them.  Since
+Carol does not know the answer to Alice's graph problem, she must lies
+and can try to fool Bob. How? Either she draws
+
+(a) another graph of V nodes to which she has a Hamilton Cycle solution
+ or
+(b) the same graph G as Alice, with vertices permuted, but for which
+she doesn't have a solution.
+
+Carol will be caught with 50% probability.
+
+If Alice/Carol answers correctly, Bob says: OK, lets do that again.  Of course
+Alice/Carol uses a DIFFERENT F to scramble the vertices, and they do the
+experiment again.
+
+Bob again asks 1 or 2: and again has a 50% chance of finding out that
+Alice/Carol is lying if indeed she is lying.  This goes on until Bob has
+asked k times, and has almost certainly unmasked a liar -- for the
+chance of answering k yes/no questions correctly at random is 2^(-k).  If 10
+questions are answered correctly, this would happen at random only 1/1024
+of the time, and Bob can be 99.9 percent sure that he is dealing with Alice.
+After k=20 times he is 99.9999 percent sure.
+
+Now see what has happened:
+
+Has Alice told Bob what the Hamilton Cycle is for her graph?
+
+No, just that there is one. 
+
+Can Carol imitate Alice?
+
+Even if Carol has seen all of Bob's questions and all of Alice's
+answers, it would not help her at all in imitating Alice.
+
+
+This identification is based on "zero-knowledge proofs" ..  the fact
+that we now know how to convince someone that we can solve a problem,
+but without allowing them even 1 bit of information as to what that
+solution is.
+
+
+Thanks to Mary Jennings for supplying a draft of her notes.
+
+RJF
+
+
+

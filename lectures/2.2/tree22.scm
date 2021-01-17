@@ -1,0 +1,5 @@
+(define (deep-map fn lol)
+  (if (list? lol)
+      (map (lambda (element) (deep-map fn element))
+	   lol)
+      (fn lol)))
