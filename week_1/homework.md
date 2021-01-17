@@ -43,7 +43,7 @@ Write a procedure squares that takes a sentence of numbers as its argument and r
     > (4 9 16 25)
 ```
 
-> From `squares.scm`:
+> See `squares.scm`:
 >
 > ```scheme
 > (define (square n)
@@ -63,6 +63,34 @@ Write a procedure switch that takes a sentence as its argument and returns a sen
 Example:
 
 ```scheme
-> (switch ’(You told me that I should wake you up))
+> (switch '(You told me that I should wake you up))
 (i told you that you should wake me up)
 ```
+
+> See `switch.scm`:
+>
+> ```scheme
+> (define (replace w)
+>   (cond ((equal? w 'i) 'you)
+>         ((equal? w 'I) 'you)
+>         ((equal? w 'me) 'you)
+>         ((equal? w 'you) 'me)
+>         (else w) ))
+>
+> (define (replace-you-with-i w)
+>   (cond ((equal? w 'you) 'I)
+>         ((equal? w 'You) 'I)
+>         (else w)))
+>
+> (define (switch s)
+>   (sentence
+>     (replace-you-with-i (first s))
+>     (switch-iter (butfirst s))))
+>
+> (define (switch-iter s)
+>   (if (empty? s)
+>       '()
+>       (sentence
+>         (replace (first s))
+>         (switch-iter (butfirst s)))))
+> ```
