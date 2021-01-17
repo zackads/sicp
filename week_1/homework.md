@@ -152,8 +152,6 @@ If `or` is an ordinary procedure, all three argument expressions will be evaluat
 
 Your mission is to devise a test that will tell you whether Scheme’s `and` and `or` are special forms or ordinary functions. This is a somewhat tricky problem, but it’ll get you thinking about the evaluation process more deeply than you otherwise might.
 
-Why might it be advantageous for an interpreter to treat `or` as a special form and evaluate its arguments one at a time? Can you think of reasons why it might be advantageous to treat `or` as an ordinary function?
-
 > See `and-or.smc`:
 >
 > ```scheme
@@ -170,3 +168,13 @@ Why might it be advantageous for an interpreter to treat `or` as a special form 
 > (define (test-and n)
 >   (and (= 0 (- n n)) (= n (/ (+ n n) 2))))
 > ```
+
+Why might it be advantageous for an interpreter to treat `or` as a special form and evaluate its arguments one at a time?
+
+> Evaluation the arguments of an `or` statement one at a time would allow the interpreter to cease further evaluation if one of the arguments evaluates `true`. For `or` statements with many arguments or with expensive arguments, this could make substantial efficiency gains.
+
+Can you think of reasons why it might be advantageous to treat `or` as an ordinary function?
+
+> Having special form elements of a language reduces consistency and increase the amount of syntactical features the programmer is required to learn before being proficient.
+>
+> By making `or` an ordinary function, complexity is reduced. Reduced complexity may result in productivity gains for programmers. These productivity gains may offset any runtime performance benefits of treating `or` as a special form.
