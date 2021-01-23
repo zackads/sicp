@@ -72,11 +72,52 @@ Pi / 4 = (2 * 4 * 4 * 6 * 6 * 8 ...) / (3 * 3 * 5 * 5 * 7 * 7 ...)
 > (define (accumulate combiner null-value term a next b)
 >  (if (> a b)
 >      null-value
->      (combiner (term a) (accumulate * 1 term (next a) next b)) ))
+>      (combiner (term a)
+>      (accumulate combiner null-value term (next a) next b)) ))
+>
+> (define (sum term a next b)
+>  (accumulate + 0 term a next b))
 >
 > (define (product term a next b)
->  (accumulate * 1 (lambda (x) x) a next b))
+>  (accumulate * 1 term x a next b)
+> ```
+
+**SICP Exercise 1.33** - You can obtain an even more general version of `accumulate` (exercse 1.32) by introducing the notion of a _filter_ on the terms to be combined. That is, combine only those terms derived from values in the range that satisfy a specified condition. The resulting filtered-accumulate abstraction takes the same arguments as accumulate, together with an additional predicate of one argument that specifies the filter.
+
+Write filtered-accumulate as a procedure.
+
+> See `filtered-accumulate.scm`
 >
-> (define (factorial n)
->  (accumulate * 1 (lambda (x) x) 1 1+ n))
+> ```scheme
+> (define (filtered-accumulate combiner filter? null-value term a next b)
+>  (define (next-match a next filter?)
+>  (if (filter? (next a))
+>      (next a)
+>      (next-match (next a) next filter?)))
+>  (if (> a b)
+>      null-value
+>      (combiner (term a)
+>                (filtered-accumulate combiner filter? null-value term (next-match a next filter?) next b)) ))
+> ```
+
+Show how to express the following using filtered-accumulate:
+
+a. the sum of the squares of the prime numbers in the interval _a_ to _b_ (assuming that you have a `prime?` predicate already written)
+
+> See `filtered-accumulate.scm`
+>
+> ```scheme
+> (define (sum-squares-primes a b)
+>  (define (square n) (* n n))
+>  (filtered-accumulate + prime? 0 square a 1+ b))
+> ```
+
+b. the product of all the positive integers less than _n_ that are relatively prime to `n` (i.e. all positive integers _i < n_ such that _GCD(i, n) = 1_).
+
+> See `filtered-accumulate.scm`
+>
+> ```scheme
+> (define (product-positive-coprimes n)
+>  (define (coprime? a) (= (gcd a n) 1))
+>  (filtered-accumulate * coprime? 1 (lambda (x) x) 1 1+ n))
 > ```
