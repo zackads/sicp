@@ -146,7 +146,7 @@ to approximate zeros of the cubic _`\_x^3 + ax^2 + bx + c_
 >  (lambda (x) (procedure (procedure x))))
 > ```
 
-**SICP Exercise 1.43** - If f is a numerical function and n is a posi- tive integer, then we can form the nth repeated application of f, which is defined to be the function whose value at x is f(f(...(f(x))...)). For example, if f is the function x 􏰀→ x + 1, then the nth repeated application of f is the function x 􏰀→ x +n. If f is the operation of squaring a num- ber, then the nth repeated application of f is the function that raises its argument to the 2n -th power. Write a proce- dure that takes as inputs a procedure that computes f and a positive integer n and returns the procedure that computes the nth repeated application of f. Your procedure should be able to be used as follows:
+**SICP Exercise 1.43** - If f is a numerical function and n is a positive integer, then we can form the nth repeated application of f, which is defined to be the function whose value at x is f(f(...(f(x))...)). For example, if f is the function x 􏰀→ x + 1, then the nth repeated application of f is the function x 􏰀→ x +n. If f is the operation of squaring a num- ber, then the nth repeated application of f is the function that raises its argument to the 2n -th power. Write a proce- dure that takes as inputs a procedure that computes f and a positive integer n and returns the procedure that computes the nth repeated application of f. Your procedure should be able to be used as follows:
 
 `((repeated square 2) 5) 625`
 
@@ -199,3 +199,40 @@ Rewrite the `sqrt` procedure of Section 1.1.7 and the `fixed-point` procedure of
 >  (define (improve guess) (f guess))
 >  ((iterative-improve close-enough? improve) first-guess))
 > ```
+
+## Question 2
+
+Last week you wrote procedures `squares`, that squared each number in its argument `sentence`, and saw `pigl-sent`, that pigled each word in its argument sentence.
+
+Generalize this pattern to create a higher-order procedure called `every` that applies an arbitrary procedure, given as an argument, to each word of an argument sentence. This procedure is used as follows:
+
+```scheme
+> (every square '(1 2 3 4))
+(1 4 9 16)
+> (every first '(nowhere man))
+(n m)
+```
+
+> See `every.scm`
+>
+> ```scheme
+> (define (every f sent)
+>  (if (eq? sent '())
+>      sent
+>      (sentence (f (first sent)) (every f (butfirst sent))) ))
+> ```
+
+## Question 3
+
+Our Scheme library provides versions of the `every` function from the last exercise and the `keep` function shown in lecture. Get familiar with these by trying examples such as the following:
+
+```scheme
+(every (lambda (letter) (word letter letter)) ’purple)
+(every (lambda (number) (if (even? number) (word number number) number))
+       ’(781 5 76 909 24))
+(keep even? ’(781 5 76 909 24))
+(keep (lambda (letter) (member? letter 'aeiou)) 'bookkeeper)
+(keep (lambda (letter) (member? letter 'aeiou)) 'syzygy)
+(keep (lambda (letter) (member? letter 'aeiou)) '(purple syzygy))
+(keep (lambda (wd) (member? 'e wd)) '(purple syzygy))
+```
