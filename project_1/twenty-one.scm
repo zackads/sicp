@@ -62,23 +62,10 @@
           (sum-filter filter (+ accumulator (transform (first sent) accumulator)) transform (butfirst sent))
           (sum-filter filter accumulator transform (butfirst sent)) )))
 
-(define (ace? card) (equal? (first card) 'a))
-(define (not-ace? card) (not (ace? card)))
-
 (define (best-total cards)
+  (define (ace? card) (equal? (first card) 'a))
+  (define (not-ace? card) (not (ace? card)))
   (sum-filter ace? (sum-filter not-ace? 0 best-value cards) best-value cards))
 
-(set! best-total best-total) ; allow tracing on these functions
-(set! sum-filter sum-filter)
-(set! best-value best-value)
-; (trace best-total sum-filter best-value)
-
-(best-total '(ad 8s)) ; 19, ok
-(best-total '(ad 8s 5h)); 14, ok
-(best-total '(ad as 9h)); 21, ok
-(best-total '(10s 5h)); 15, ok
-(best-total '(10s 10h as)); 21, ok
-(best-total '(qs jh as)); 21, ok
-(best-total '(kd jc as)); 21, ok
-(best-total '(kd as)); 21, ok
-(best-total '(7d as)); 18, ok
+(define (stop-at-17 customer-hand-so-far dealer-up-card)
+  (< (best-total (sentence customer-hand-so-far dealer-up-card)) 17))
