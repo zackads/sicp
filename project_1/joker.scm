@@ -31,7 +31,7 @@
 
 (define (make-ordered-deck)
   (define (make-suit s)
-    (every (lambda (rank) (word rank s)) '(A 2 3 4 5 6 7 8 9 10 J Q K)) )
+    (every (lambda (rank) (word rank s)) '(A 2 3 4 5 6 7 8 9 10 J Q K *)) )
   (se (make-suit 'H) (make-suit 'S) (make-suit 'D) (make-suit 'C)) )
 
 (define (make-deck)
@@ -47,7 +47,9 @@
 
 (define (best-value card current-sum)
   (define (ace-value) (if (<= (+ 11 current-sum) 21) 11 1))
+  (define (joker-value) (if (<= 10 current-sum) 11 (- 21 current-sum)))
   (cond ((equal? (butlast card) 'A) (ace-value))
+        ((equal? (butlast card) '*) (joker-value))
         ((or
           (equal? (butlast card) 'K) 
           (equal? (butlast card) 'Q) 
@@ -62,32 +64,14 @@
           (sum-filter filter (+ accumulator (transform (first sent) accumulator)) transform (butfirst sent))
           (sum-filter filter accumulator transform (butfirst sent)) )))
 
-; filter, map and sum not used: I abstracted these to think about how I could generalise out the constituent
-; parts of sum-filter.  I got distracted and didn't use them
-
-(define (filter sent predicate?)
-  (if (equal? sent '())
-      '()
-      (if (predicate? (first sent))
-          (sentence (first sent) (filter (butfirst sent) predicate?))
-          (filter (butfirst sent) predicate?))))
-
-(define (map sent procedure)
-  (if (equal? sent '())
-      '()
-      (sentence (procedure (first sent)) (map (butfirst sent) procedure))))
-
-(define (sum sent)
-  (define (sum-iter accumulator sent)
-    (if (equal? sent '())
-        accumulator
-        (sum-iter (+ accumulator (first sent)) (butfirst sent))))
-  (sum-iter 0 sent))
-
 (define (best-total cards)
   (define (ace? card) (equal? (first card) 'a))
+  (define (joker? card) (equal? (first card) '*))
+
   (define (not-ace? card) (not (ace? card)))
-  (sum-filter ace? (sum-filter not-ace? 0 best-value cards) best-value cards))
+  (define (not-ace-or-joker? card) (or (not (ace? card)) (not (joker? card))))
+  
+  (sum-filter joker? (sum-filter ace? (sum-filter not-ace-or-joker? 0 best-value cards) best-value cards) best-value cards))
 
 (define (contains? sent pred)
   (if (equal? sent '())
