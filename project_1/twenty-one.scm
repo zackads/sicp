@@ -73,18 +73,6 @@
       (if (pred (first sent))
           #t
           (contains? (butfirst sent) pred))))
-      
-(define (heart? card)
-  (equal? (last card) 'H))
-
-(define (clubs? card)
-  (equal? (last card) 'C))
-
-(define (diamonds? card)
-  (equal? (last card) 'D))
-
-(define (spades? card)
-  (equal? (last card) 'S))
 
 ; Player strategies
 (define (stop-at n)
@@ -108,9 +96,21 @@
         (strategy-if-suit-found customer-hand-so-far dealer-up-card)
         (strategy-if-suit-not-found customer-hand-so-far dealer-up-card))))
   
-
 (define (valentine customer-hand-so-far dealer-up-card)
   ((suit-strategy 'H (stop-at 19) (stop-at 17)) customer-hand-so-far dealer-up-card)) 
+
+(define (majority strategy1 strategy2 strategy3)
+  (lambda (customer-hand-so-far dealer-up-card)
+    (or (and (strategy1 customer-hand-so-far dealer-up-card)
+             (strategy2 customer-hand-so-far dealer-up-card))
+        (and (strategy1 customer-hand-so-far dealer-up-card)
+             (strategy3 customer-hand-so-far dealer-up-card))
+        (and (strategy2 customer-hand-so-far dealer-up-card)
+             (strategy3 customer-hand-so-far dealer-up-card)) )))
+
+(define (reckless strategy)
+  (lambda (customer-hand-so-far dealer-up-card)
+    (strategy (butlast customer-hand-so-far) dealer-up-card)))
 
 (define (play-n strategy n)
   (define (accumulator acc i)
@@ -125,5 +125,5 @@
 (set! stop-at stop-at)
 ; (trace valentine suit-strategy contains? stop-at)
 
-(play-n valentine 100)
+(play-n (reckless valentine) 100)
 
