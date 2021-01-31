@@ -47,11 +47,11 @@
 
 (define (best-value card current-sum)
   (define (ace-value) (if (<= (+ 11 current-sum) 21) 11 1))
-  (cond ((equal? (butlast card) 'a) (ace-value))
+  (cond ((equal? (butlast card) 'A) (ace-value))
         ((or
-          (equal? (butlast card) 'k)
-          (equal? (butlast card) 'q)
-          (equal? (butlast card) 'j))
+          (equal? (butlast card) 'K) 
+          (equal? (butlast card) 'Q) 
+          (equal? (butlast card) 'J))
          10)
         (else (butlast card))))
 
@@ -69,3 +69,19 @@
 
 (define (stop-at-17 customer-hand-so-far dealer-up-card)
   (< (best-total (sentence customer-hand-so-far dealer-up-card)) 17))
+
+(define (play-n strategy n)
+  (define (accumulator acc i)
+    (if (equal? i 0)
+        acc
+        (accumulator (+ acc (twenty-one strategy)) (- i 1))))
+  
+  (accumulator 0 n))
+
+(set! play-n play-n)
+(set! stop-at-17 stop-at-17)
+(trace play-n stop-at-17)
+
+(play-n stop-at-17 100)
+
+  
