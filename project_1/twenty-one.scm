@@ -77,6 +77,15 @@
 (define (heart? card)
   (equal? (last card) 'H))
 
+(define (clubs? card)
+  (equal? (last card) 'C))
+
+(define (diamonds? card)
+  (equal? (last card) 'D))
+
+(define (spades? card)
+  (equal? (last card) 'S))
+
 ; Player strategies
 (define (stop-at n)
   (lambda (customer-hand-so-far dealer-up-card)
@@ -87,16 +96,21 @@
   
 (define (dealer-sensitive customer-hand-so-far dealer-up-card)
   (or (and (>= (best-value dealer-up-card 10) 7)
-       ((stop-at 17) customer-hand-so-far dealer-up-card))
+           ((stop-at 17) customer-hand-so-far dealer-up-card))
       (and
        (>= 2 (best-value dealer-up-card 1))
        (<= 6 (best-value dealer-up-card 1))
        ((stop-at 12) customer-hand-so-far dealer-up-card))))
 
+(define (suit-strategy suit strategy-if-suit-found strategy-if-suit-not-found)
+  (lambda (customer-hand-so-far dealer-up-card)
+    (if (contains? customer-hand-so-far (lambda (card) (equal? (last card) suit)))
+        (strategy-if-suit-found customer-hand-so-far dealer-up-card)
+        (strategy-if-suit-not-found customer-hand-so-far dealer-up-card))))
+  
+
 (define (valentine customer-hand-so-far dealer-up-card)
-  (if (contains? customer-hand-so-far heart?)
-      ((stop-at 19) customer-hand-so-far dealer-up-card)
-      ((stop-at 17) customer-hand-so-far dealer-up-card)))
+  ((suit-strategy 'H (stop-at 19) (stop-at 17)) customer-hand-so-far dealer-up-card)) 
 
 (define (play-n strategy n)
   (define (accumulator acc i)
@@ -106,14 +120,10 @@
   
   (accumulator 0 n))
 
-(set! play-n play-n)
-(set! stop-at-17 stop-at-17)
-(set! dealer-sensitive dealer-sensitive)
-(set! valentine valentine)
+(set! suit-strategy suit-strategy)
 (set! contains? contains?)
-(set! heart? heart?)
-(trace contains?)
+(set! stop-at stop-at)
+; (trace valentine suit-strategy contains? stop-at)
 
 (play-n valentine 100)
 
-  
