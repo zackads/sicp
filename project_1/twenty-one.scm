@@ -68,16 +68,20 @@
   (sum-filter ace? (sum-filter not-ace? 0 best-value cards) best-value cards))
 
 ; Player strategies
-(define (stop-at-17 customer-hand-so-far dealer-up-card)
-  (< (best-total (sentence customer-hand-so-far dealer-up-card)) 17))
+(define (stop-at n)
+  (lambda (customer-hand-so-far dealer-up-card)
+    (< (best-total (sentence customer-hand-so-far dealer-up-card)) n)))
 
+(define (stop-at-17 customer-hand-so-far dealer-up-card)
+  ((stop-at 17) customer-hand-so-far dealer-up-card))
+  
 (define (dealer-sensitive customer-hand-so-far dealer-up-card)
   (or (and (>= (best-value dealer-up-card 10) 7)
-       (stop-at-17 customer-hand-so-far dealer-up-card))
+       ((stop-at 17) customer-hand-so-far dealer-up-card))
       (and
        (>= 2 (best-value dealer-up-card 1))
        (<= 6 (best-value dealer-up-card 1))
-       (< (best-total (sentence customer-hand-so-far dealer-up-card) 12)))))
+       ((stop-at 12) customer-hand-so-far dealer-up-card))))
 
 (define (play-n strategy n)
   (define (accumulator acc i)
@@ -92,6 +96,6 @@
 (set! dealer-sensitive dealer-sensitive)
 (trace play-n dealer-sensitive)
 
-(play-n dealer-sensitive 100)
+(play-n stop-at-17 100)
 
   
