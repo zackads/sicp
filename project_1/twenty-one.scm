@@ -67,6 +67,16 @@
   (define (not-ace? card) (not (ace? card)))
   (sum-filter ace? (sum-filter not-ace? 0 best-value cards) best-value cards))
 
+(define (contains? sent pred)
+  (if (equal? sent '())
+      #f
+      (if (pred (first sent))
+          #t
+          (contains? (butfirst sent) pred))))
+      
+(define (heart? card)
+  (equal? (last card) 'H))
+
 ; Player strategies
 (define (stop-at n)
   (lambda (customer-hand-so-far dealer-up-card)
@@ -83,6 +93,11 @@
        (<= 6 (best-value dealer-up-card 1))
        ((stop-at 12) customer-hand-so-far dealer-up-card))))
 
+(define (valentine customer-hand-so-far dealer-up-card)
+  (if (contains? customer-hand-so-far heart?)
+      ((stop-at 19) customer-hand-so-far dealer-up-card)
+      ((stop-at 17) customer-hand-so-far dealer-up-card)))
+
 (define (play-n strategy n)
   (define (accumulator acc i)
     (if (equal? i 0)
@@ -94,8 +109,11 @@
 (set! play-n play-n)
 (set! stop-at-17 stop-at-17)
 (set! dealer-sensitive dealer-sensitive)
-(trace play-n dealer-sensitive)
+(set! valentine valentine)
+(set! contains? contains?)
+(set! heart? heart?)
+(trace contains?)
 
-(play-n stop-at-17 100)
+(play-n valentine 100)
 
   
