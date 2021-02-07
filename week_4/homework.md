@@ -211,7 +211,44 @@ new word. It should return a copy of the list, but with every occurrence of the 
 replaced by the new word, even in sublists. For example:
 
 ```scheme
-> (substitute ’((lead guitar) (bass guitar) (rhythm guitar) drums)
-              ’guitar ’axe)
+> (substitute '((lead guitar) (bass guitar) (rhythm guitar) drums)
+              'guitar 'axe)
 ((lead axe) (bass axe) (rhythm axe) drums)
 ```
+
+> See `substitute.scm`
+>
+> ```scheme
+> (define (substitute lst old-word new-word)
+>  (define (replace word)
+>    (if (list? word)
+>        (substitute word old-word new-word)
+>        (if (equal? word old-word)
+>            new-word
+>            word)))
+>
+>  (map replace lst))
+> ```
+
+## Question 3
+
+Now write `substitute2` that takes a list, a list of old words, and a list of new words; the last two lists should be the same length. It should return a copy of the first argument, but with each word that occurs in the second argument replaced by the corresponding word of the third argument:
+
+```scheme
+> (substitute2 '((4 calling birds) (3 french hens) (2 turtle doves))
+               '(1 2 3 4) '(one two three four))
+((four calling birds) (three french hens) (two turtle doves))
+```
+
+> See `substitute.scm`
+>
+> ```scheme
+> ; Reusing substitute
+> (define (substitute2 lst old-words new-words)
+>  (if (empty? old-words)
+>      lst
+>      (substitute2
+>       (substitute lst (car old-words) (car new-words))
+>       (cdr old-words)
+>       (cdr new-words))))
+> ```
