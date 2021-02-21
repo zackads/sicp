@@ -33,7 +33,6 @@
      ; procedure to access new company's ADT here
      )
 
-
 ; Generic procedure for getting an employee record
 ; Works for both marketing and finance departments
 (define (get-record employee-name personnel-file)

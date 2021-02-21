@@ -88,10 +88,249 @@ d. When Insatiable takes over a new company, what changes must be made in order 
 >     )
 > ```
 
-**SICP Exercise 2.75** -
-**SICP Exercise 2.76** -
-**SICP Exercise 2.77** -
-**SICP Exercise 2.79** -
-**SICP Exercise 2.80** -
-**SICP Exercise 2.81** -
-**SICP Exercise 2.83** -
+**SICP Exercise 2.75** - Implement the constructor `make-from-mag-ang` in message-passing style. This procedure should be analogous to the `make-from-real-imag` procedure given above.
+
+> See `make-from-mag-ang.scm`
+
+```scheme
+(define (make-from-mag-ang x y)
+  (define (dispatch op)
+    (cond ((eq? op 'real-part) (* x (cos y)))
+          ((eq? op 'imag-part) (* x (sin y)))
+          ((eq? op 'magnitude) x)
+          ((eq? op 'angle) y)
+          (else (error "Unknown op: MAKE-FROM-MAG-ANG" op))))
+  dispatch)
+```
+
+**SICP Exercise 2.76** - As a large system with generic operations evolves, new types of data objects or new operations may be needed. For each of the three strategies — generic operations with explicit dispatch, data-directed style, and message-passing-style — describe the changes that must be made to a system in order to add new types or new operations.
+
+- **Generic operations with explicit dispatch**. For each new type, each generic operation that would use that type must be updated with a new conditional clause to handle it. This means **T \* O** changes must be made to the system for each new type, where T is the number of types and O is the number of relevant generic operations. For each new operation, the only change to the system is the creation of the new operation. This means only **O** changes must be made to the system, where O is the number of new operations.
+- **Data-directed style**. For each new type, the type-operation table is updated to tell `apply-generic` which procedure to apply to the new type for a given operation. This means **T \* O** changes must be made to the system for each new type, where T is the number of new types and O is the number of relevant generic operations. BUT this is better than explicity dispatch because those changes are made in only one place: change to the system overall is easier because type-operation knowledge is concentrated in the table, not spread over many generic procedures. For each new operation, the type-operation table must be updated for every type that the operation will use: **T \* O** times. Again, this knowledge is concentrated in one place, making change to the system easier to manage.
+- **Message-passing style**. For each new type, only the type itself is created: **T** changes. For each new operation, a message is added to the type which contains the required operation: **O** changes. However, message-passing style requires substantial change to the _users_ of the message-passing objects. So unless the system is already written in a message-passing style, each additional type and operation would require exponential modifications to the existing system.
+
+Which organization would be most appropriate for a system in which new types must often be added?
+
+> _Data-directed style_ would be most appropriate, as the changes to the system needed to handle new types would be limited to the type-operation table.
+
+Which would be most appropriate for a system in which new operations must often be added?
+
+> _Explicit dispatch / conventional style_ would be most appropriate for a system in which new operations must often be added, because under conventional style new operations don't require changes elsewhere in the system.
+
+**SICP Exercise 2.77** - Louis Reasoner tries to evaluate the expression `(magnitude z)` where `z` is the object shown in Figure 2.24.
+
+![SICP Figure 2.24](images/2021-02-21-12-26-48.png)
+
+To his surprise, instead of the answer `5` he gets an error message from `apply-generic`, saying there is no method for the operation `magnitude` on the types `(complex)`. He shows this interaction to Alyssa P. Hacker, who says "The problem is that the complex-number selectors were never defined for `complex` numbers, just for `polar` and `rectangular` numbers. All you have to do to make this work is add the following to the complex package:"
+
+```scheme
+(put 'real-part '(complex) real-part)
+(put 'imag-part '(complex) imag-part)
+(put 'magnitude '(complex) magnitude)
+(put 'angle '(complex) angle)
+```
+
+Describe in detail why this works. As an example, trace through all the procedures called in evaluating the expression `(magnitude z)` where `z` is the object shown in Figure 2.24.
+
+> ```scheme
+> (magnitude z)
+>    (apply-generic 'magnitude '(z))
+>        (map type-tag '(z))
+>            '(complex)
+>        (get 'magnitude '(complex))
+>            magnitude ; Definition of magnitude internal to `install-complex-package`
+>        (apply magnitude (map contents '(z)))
+>            '(rectangular (3 . 4))
+>        (apply magnitude '(rectangular (3 . 4)))
+>            (magnitude '(rectangular (3 . 4)))
+>            5
+>        5
+>    5
+> 5
+> ```
+>
+> ❌
+>
+> Correct answer:
+>
+> Starting with
+>
+>          `(magnitude '(complex rectangular 3 . 4))`
+>
+> we call MAGNITUDE giving
+>
+>          `(apply-generic  'magnitude  '(complex rectangular 3 . 4))`
+>
+> The apply-generic function (see pg. 184) just uses GET to find the
+> entry corresponding to 'magnitude and '(complex), and gets the same
+> function MAGNITUDE that we invoked in the first place. This
+> time, however, the argument to MAGNITUDE is (CONTENTS OBJ)
+> so that the first type flag (COMPLEX) is removed. In other
+> words, we end up calling
+>
+>          `(magnitude '(rectangular 3 . 4))`
+>
+> Calling the function MAGNITUDE again, this becomes :
+>
+>       `(apply-generic 'magnitude '(rectangular 3 . 4))`
+>
+> The apply-generic function now looks up the entry for 'magnitude and
+> '(rectangular) and finds the MAGNITUDE function from the RECTANGULAR
+> package; that function is called with '(3 . 4) as its argument, which
+> yields the final answer... (sqrt (square 3) (square 4)) ==> 5
+
+In particular, how many times is `apply-generic` invoked?
+
+> Twice.
+
+What procedure is dispatched to in each case?
+
+> First, to `magnitude` from the complex package again (but with the type tag stripped). Second, to the `magnitude` function from the rectangular package.
+
+**SICP Exercise 2.79** - Define a generic equality predicate `equ?` that tests the equality of two numbers, and install it in the generic arithmetic package. This operation should work for ordinary numbers, rational numbers, and complex numbers.
+
+> See equ.scm
+>
+> ```scheme
+> (define (equ? x y)
+>  (apply-generic 'equ? '(x y)))
+>
+> ; In install-scheme-number-package
+>  (put 'equ? '(scheme-number scheme-number)
+>       (lambda (x y) (equal? x y)))
+>
+> ; In install-rational-package
+> (define (equ-rat? x y)
+>  (and (equal? (numer x) (numer y))
+>       (equal? (denom x) (denom y))))
+> ; ...
+> (put 'equ? '(rational rational) equ-rat?)
+>
+> ; In install-complex-package
+> (define (equ-com? x y)
+>  (and (equal? (real-part x) (real-part y))
+>       (equal? (imag-part x) (imag-part y))))
+> ; ...
+> (put 'equ? '(complex complex) equ-com?)
+>
+> ```
+
+**SICP Exercise 2.80** - Define a generic predicate `=zero?` that tests if its argument is zero, and install it in the generic arithmetic package. This operation should work for ordinary numbers, rational numbers, and complex numbers.
+
+> See `=zero?.scm`
+>
+> (define (=zero? n)
+> (apply-generic '=zero? n))
+>
+> ; In install-scheme-number-package
+> (put '=zero? 'scheme-number
+> (lambda (n) (= n 0)))
+>
+> ; In install-rational-package
+> (define (=zero-rat? n)
+> (= n (make-rat 0)))
+> ; ...
+> (put '=zero? 'rational =zero-rat?)
+>
+> ; In install-complex-package
+> (define (=zero-com? n)
+> (= n (make-complex 0)))
+> ; ...
+> (put '=zero? 'complex =zero-com?)
+
+**SICP Exercise 2.81** - Louis Reasoner has noticed that `apply-generic` may try to coerce the arguments to each other’s type even if they already have the same type. Therefore, he reasons, we need to put procedures in the coercion table to coerce arguments of each type to their own type. For example, in addition to the `scheme-number->complex` coercion shown above, he would do:
+
+```scheme
+(define (scheme-number->scheme-number n) n)
+(define (complex->complex z) z)
+(put-coercion 'scheme-number
+              'scheme-number
+              scheme-number->scheme-number)
+(put-coercion 'complex 'complex complex->complex)
+```
+
+a. With Louis’s coercion procedures installed, what happens if apply-generic is called with two arguments of type `scheme-number` or two arguments of type `complex` for an operation that is not found in the table for those types? For example, assume that we’ve defined a generic exponentiation operation:
+
+```scheme
+(define (exp x y) (apply-generic 'exp x y))
+```
+
+and have put a procedure for exponentiation in the Scheme-number package but not in any other package:
+
+```scheme
+;; following added to Scheme-number package
+(put 'exp '(scheme-number scheme-number)
+    (lambda (x y) (tag (expt x y))))
+    ; using primitive expt
+```
+
+What happens if we call `exp` with two complex numbers as arguments?
+
+> An infinite loop will occur. Because a coercion now exists for `complex->complex`, the condition `t1->t2` in the final `cond` compound expression will evaluate `true`, resulting in `apply-generic` being called again with effectively the same arguments repeated ad infinitum. The same would occur for `scheme-number->scheme-number`; Louis's coercion procedures have resulted in infinite looping.
+
+b. Is Louis correct that something had to be done about coercion with arguments of the same type, or does `apply-generic` work correctly as is?
+
+> Louis is wrong. Providing the entry in the type-and-operations table contains `'(scheme-number scheme-number)` or `'(complex complex)`, `apply-generic` will work correctly as-is for the relevant type.
+
+c. Modify `apply-generic` so that it doesn’t try coercion if the two arguments have the same type.
+
+> See `apply-generic-without-coercion-of-same-type.scm`:
+>
+> ```scheme
+> (define (homogenous? l)
+>  (cond ((null? (cdr l)) #t)
+>        ((equal? (car l) (cadr l)) (homogenous? (cdr l)))
+>        (else #f)))
+>
+> (define (apply-generic op . args)
+>  (let ((type-tags (map type-tag args)))
+>    (let ((proc (if (homogenous? type-tags)
+>                    (get op (car type-tags))
+>                    (get op type-tags)))
+>          (if proc
+>              (apply proc (map contents args))
+>              (if (= (length args) 2)
+>                  (let ((type1 (car type-tags))
+>                        (type2 (cadr type-tags))
+>                        (a1 (car args))
+>                        (a2 (cadr args)))
+>                    (let ((t1->t2 (get-coercion type1 type2))
+>                          (t2->t1 (get-coercion type2 type1)))
+>                      (cond (t1->t2
+>                             (apply-generic op (t1->t2 a1) a2))
+>                            (t2->t1
+>                             (apply-generic op a1 (t2->t1 a2)))
+>                            (else (error "No method for these types"
+>                                         (list op type-tags))))))
+>                  (error "No method for these types"
+>                         (list op type-tags)))))))
+> ```
+
+**SICP Exercise 2.83** - Suppose you are designing a generic arithmetic system for dealing with the tower of types shown in Figure 2.25: integer, rational, real, complex.
+
+![SICP Figure 2.25](images/2021-02-21-16-11-22.png)
+
+For each type (except complex), design a procedure that raises objects of that type one level in the tower. Show how to install a generic `raise` operation that will work for each type (except complex).
+
+> See `raise.scm`
+>
+> ```scheme
+> ; Constructors
+> (define (make-rational-from-integer n) (make-rat n 1))
+> (define (make-real-from-rational n) (make-real (numerator n) (denominator n)))
+>
+> ; Coercion procedures
+> (define (integer->rational n) (make-rational-from-integer (contents n)))
+> (define (rational->real n) (make-real-from-rational (contents n)))
+>
+> ; Install to coercion table
+> (put-coercion 'integer 'rational integer->ration)
+> (put-coercion 'rational 'real rational->real)
+>
+> ; Install to type-operation table of the rational and integer packages
+> (put 'raise '(integer) integer->rational)
+> (put 'raise '(rational) rational->complex)
+>
+> (define (raise n)
+>  (apply-generic 'raise n))
+> ```
