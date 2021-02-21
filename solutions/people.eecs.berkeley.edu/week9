@@ -1,0 +1,570 @@
+CS 61A -- Week 9 solutions
+
+LAB ACTIVITIES:
+
+1.  Use a LET to keep both initial and current balance
+
+(define (make-account init-amount)
+  (let ((BALANCE INIT-AMOUNT))                ;;;  This is the change.
+    (define (withdraw amount)
+      (set! balance (- balance amount)) balance)
+    (define (deposit amount)
+      (set! balance (+ balance amount)) balance)
+    (define (dispatch msg)
+      (cond
+        ((eq? msg 'withdraw) withdraw)
+        ((eq? msg 'deposit) deposit)))
+    dispatch))
+
+
+2.  Add messages to read those variables.
+
+(define (make-account init-amount)
+  (let ((balance init-amount))
+    (define (withdraw amount)
+      (set! balance (- balance amount)) balance)
+    (define (deposit amount)
+      (set! balance (+ balance amount)) balance)
+    (define (dispatch msg)
+      (cond
+        ((eq? msg 'withdraw) withdraw)
+        ((eq? msg 'deposit) deposit)
+	((EQ? MSG 'BALANCE) BALANCE)                  ;; two lines added here
+	((EQ? MSG 'INIT-BALANCE) INIT-AMOUNT)))
+    dispatch))
+
+
+3.  Add transaction history.
+
+(define (make-account init-amount)
+  (let ((balance init-amount)
+        (TRANSACTIONS '()))                       ;; add local state var
+    (define (withdraw amount)
+      (SET! TRANSACTIONS (APPEND TRANSACTIONS
+				 (LIST (LIST 'WITHDRAW AMOUNT))))    ;; update
+      (set! balance (- balance amount)) balance)
+    (define (deposit amount)
+      (SET! TRANSACTIONS (APPEND TRANSACTIONS
+				 (LIST (LIST 'DEPOSIT AMOUNT))))     ;; update
+      (set! balance (+ balance amount)) balance)
+    (define (dispatch msg)
+      (cond
+        ((eq? msg 'withdraw) withdraw)
+        ((eq? msg 'deposit) deposit)
+	((eq? msg 'balance) balance)
+	((eq? msg 'init-balance) init-amount)
+	((EQ? MSG 'TRANSACTIONS) TRANSACTIONS)))      ;; message to examine it
+    dispatch))
+
+
+4.  Why substitution doesn't work.
+
+(plus1 5)  becomes
+
+(set! 5 (+ 5 1))
+5
+
+The first line (the SET!) is syntactically wrong; "5" isn't a variable
+and it doesn't make sense to substitute into an unevaluated part of a
+special form.
+
+The second line (returning the value 5) is syntactically okay but
+gives the wrong answer; it ignores the fact that the SET! was supposed
+to change the result.
+
+
+HOMEWORK:
+
+3.3  Accounts with passwords
+
+(define (make-account balance password)
+  (define (withdraw amount) ; Starting here exactly as in p. 223
+    (if (>= balance amount)
+	(begin (set! balance (- balance amount))
+	       balance)
+	"Insufficient funds"))
+  (define (deposit amount)
+    (set! balance (+ balance amount))
+    balance)
+  (define (dispatch pw m) ; Starting here different because of pw
+    (cond ((not (eq? pw password))
+	   (lambda (x) "Incorrect password"))
+	  ((eq? m 'withdraw) withdraw) ; Now the same again
+	  ((eq? m 'deposit) deposit)
+	  (else (error "Unknown request -- MAKE-ACCOUNT"
+		       m))))
+  dispatch)
+
+The big question here is why withdraw can get away with returning
+        "Insufficient funds"
+while dispatch has to return this complicated
+        (lambda (x) "Incorrect password")
+The answer is that ordinarily the result returned by withdraw is supposed
+to be a number, which is just printed.  In case of an error, withdraw can
+return a string instead, and that string will just get printed.  But
+dispatch is ordinarily supposed to return a PROCEDURE.  In the example
+        ((acc 'some-other-password 'deposit) 50)
+if dispatch just returned the string, it would be as if we'd typed
+        ("Incorrect password" 50)
+which makes no sense.  Instead this version is as if we typed
+        ((lambda (x) "Incorrect password") 50)
+which does, as desired, print the string.
+
+A simpler solution would be to say (error "Incorrect password") because
+the ERROR primitive stops the computation and returns to toplevel after
+printing its argument(s).  But you should understand the version above!
+
+
+3.4 call-the-cops
+
+(define (make-account balance password)
+  (define error-count 0) ; THIS LINE ADDED
+  (define (withdraw amount)
+    (if (>= balance amount)
+	(begin (set! balance (- balance amount))
+	       balance)
+	"Insufficient funds"))
+  (define (deposit amount)
+    (set! balance (+ balance amount))
+    balance)
+  (define (dispatch pw m)
+    (cond ((eq? pw password) ; REARRANGED STARTING HERE
+	   (set! error-count 0)
+	   (cond ((eq? m 'withdraw) withdraw)
+	  	 ((eq? m 'deposit) deposit)
+	  	 (else (error "Unknown request -- MAKE-ACCOUNT"
+		       	      m)) ))
+	  (else
+	   (set! error-count (+ error-count 1))
+	   (if (> error-count 7) (call-the-cops))
+	   (lambda (x) "Incorrect password") )))
+  dispatch)
+
+In this version, call-the-cops will be invoked before the dispatch procedure
+goes on to return the nameless procedure that will, eventually, be invoked and
+print the string "Incorrect password", so whatever call-the-cops prints will
+appear before that message.  If you'd like it to appear instead of the string,
+change the last few lines to
+
+           (lambda (x)
+	     (if (> error-count 7)
+		 (call-the-cops)
+		 "Incorrect password"))
+
+
+3.7  Joint accounts
+
+What we want here is a new dispatch procedure that has access to the same
+environment frame containing the balance of the original account.  You could
+imagine a complicated scheme in which we teach make-account's dispatch
+procedure a new message, make-joint, such that
+	((acc 'old-password 'make-joint) 'new-password)
+will return a new dispatch procedure in a new frame with its own password
+binding but inheriting acc's balance binding.  This can work, and we'll
+do it later in this solution, but it's a little tricky because you have to
+avoid the problem of needing to write a complete dispatch procedure within
+a cond clause in the dispatch procedure!
+
+Instead, one thing to do is to create a new function that invokes f from
+within a prepared frame.
+
+Here is a first, simple version that does almost what we want:
+
+(define (make-joint old-acc old-pw new-pw)
+  (lambda (pw m)
+    (if (eq? pw new-pw)
+	(old-acc old-pw m)
+	(lambda (x) "Incorrect password"))))
+
+It's important to understand how easy this is if we're willing to treat
+the old account procedure as data usable in this new make-joint procedure.
+This version works fine, with proper password protection, but it differs
+in one small detail from what the problem asked us to do.  I'd be very happy
+with this version of the program, but for those of you who are sticklers for
+detail, here's a discussion of the problem and a revised solution.
+
+Suppose you don't know the password of the old account but you try to make a
+joint-account by guessing.  Make-joint will return a procedure, without
+complaining, and it isn't until you try to use that returned procedure that
+the old account will complain about getting the wrong password.  The problem
+says, "The second argument must match the password with which the account
+was defined in order for the make-joint operation to proceed."  They want us
+to catch a password error as soon as make-joint itself is invoked.  To do
+this, make-joint must be able to ask old-acc whether or not the given old-pw
+is correct.  So we'd like a verify-password message so that
+
+==> (peter-acc 'open-sesame 'verify-password)
+#t
+==> (peter-acc 'garply 'verify-password)
+#f
+
+Given such a facility in make-account, we can write make-joint this way:
+
+(define (make-joint old-acc old-pw new-pw)
+  (if (old-acc old-pw 'verify-password)
+      (lambda (pw m)
+	(if (eq? pw new-pw)
+	    (old-acc old-pw m)
+	    (lambda (x) "Incorrect password")))
+      (display "Incorrect password for old account")))
+
+This approach only makes sense if we use (display ...) to signal the error.
+We can't just return a string because the string won't be printed; it'll
+be bound to a symbol like paul-acc as that symbol's value.  Later, when we
+try to invoke paul-acc as a procedure, we'll get a "Application of
+non-procedure object" error message.  We also can't just do the trick of
+returning (lambda (x) "string").  That won't blow up our program, but again
+the printing of the error message won't happen until paul-acc is applied to
+something.  If we wanted to wait until then to see the error message, we
+could just use my first solution.  So we're stuck with explicitly printing
+the message.  What gets returned is whatever print returns; if we ignore
+the message and try to invoke paul-acc later, it'll blow up.
+
+To make this work we need to invent the verify-password message:
+
+(define (make-account balance password)
+  (define (withdraw amount)
+    (if (>= balance amount)
+	(begin (set! balance (- balance amount))
+	       balance)
+	"Insufficient funds"))
+  (define (deposit amount)
+    (set! balance (+ balance amount))
+    balance)
+  (define (dispatch pw m)
+    (cond ((eq? m 'verify-password) ; This clause is new
+	   (eq? pw password))
+ 	  ((not (eq? pw password))
+	   (lambda (x) "Incorrect password"))
+	  ((eq? m 'withdraw) withdraw)
+	  ((eq? m 'deposit) deposit)
+	  (else (error "Unknown request -- MAKE-ACCOUNT"
+		       m))))
+  dispatch)
+
+Note the order of the cond clauses in dispatch.  The verify-password message
+is not considered an error even if the password doesn't match; it just returns
+#f in that case.  So we first check for that message, then if not we check
+for an incorrect password, then if not we check for the other messages.
+
+By the way, we could avoid inventing the new verify-password method by using
+the existing messages in an unusual way.  Instead of
+
+(define (make-joint old-acc old-pw new-pw)
+  (if (old-acc old-pw 'verify-password)
+      ...))
+
+we could say
+
+(define (make-joint old-acc old-pw new-pw)
+  (if (NUMBER? ((OLD-ACC OLD-PW 'DEPOSIT) 0))
+      ...)
+
+
+If you want to add a make-joint message to the account dispatch procedure,
+the corresponding method has to return a new dispatch procedure.  This is
+the approach that I rejected earlier as too complicated, but it's not bad
+once you understand how to do it: instead of having a
+        (define (dispatch pw m) ...)
+so that there is one fixed dispatch procedure, you do the object-oriented
+trick of allowing multiple dispatch procedure objects, so we have a
+higher-order procedure that makes dispatch procedures.  Every time a new
+person is added to the account, we make a new dispatch procedure for that
+person, with a new password.  Even the first user of the account gets a
+dispatch procedure through this mechanism, as you'll see below:
+
+(define (make-account balance password)
+  (define (withdraw amount)
+    (if (>= balance amount)
+	(begin (set! balance (- balance amount))
+	       balance)
+	"Insufficient funds"))
+  (define (deposit amount)
+    (set! balance (+ balance amount))
+    balance)
+  (define (new-dispatch new-pw) ; This is new.  We have a dispatch maker
+    (lambda (pw m)              ; instead of just one dispatch procedure.
+      (cond ((not (eq? pw new-pw))
+	     (lambda (x) "Incorrect password"))
+	    ((eq? m 'withdraw) withdraw)
+	    ((eq? m 'deposit) deposit)
+	    ((eq? m 'make-joint) new-dispatch)
+	    (else (error "Unknown request -- MAKE-ACCOUNT"
+			 m)))))
+  (new-dispatch password)) ; We have to make a dispatcher the first time too.
+
+
+3.8  Procedure for which order of evaluation of args matters
+
+The procedure f will be invoked twice.  We want the results to depend on the
+past invocation history.  That is, (f 1) should have a different value
+depending on whether or not f has been invoked before.
+
+Given the particular values we're supposed to produce, I think the easiest
+thing is if (f 0) is always 0, while (f 1) is 1 if (f 0) hasn't been invoked
+or 0 if it has.
+
+(define f
+  (let ((history 1))
+    (lambda (x)
+      (set! history (* history x))
+      history)))
+
+If we evaluate (f 1) first, then history has the value 1, and the result (and
+new value of history) is (* 1 1) which is 1.  On the other hand, if we
+evaluate (f 0) first, that sets history to 0, so a later (f 1) returns
+(* 0 1) which is 0.
+
+The above solution only works the first time we try
+	(+ (f 0) (f 1))
+however.  After the first time, (f x) always returns 0 for any x.  Here's
+another solution that doesn't have that defect:
+
+(define f
+  (let ((invocations 0))
+    (lambda (x)
+      (set! invocations (+ invocations 1))
+      (cond ((= x 0) 0)
+	    ((even? invocations) 0)
+	    (else 1)))))
+
+Many other possible solutions are equally good.
+
+
+3.10  Let vs. parameter
+
+                                               args: initial-amount
+                                           --> body: (let ...)
+global env:                                |
+|------------------------------|           |
+| make-withdraw: --------------------> (function) --> global env
+|                              |
+| W1: -- (this pointer added later) -> (function A below)
+|                              |
+| W2: -- (this one added later too) -> (function B below)
+|------------------------------|
+
+The first invocation of make-withdraw creates a frame
+
+E1:
+|--------------------|
+|initial-amount: 100 |---> global env
+|--------------------|
+
+and in that frame evaluates the let, which makes an unnamed function
+
+                                       (function) --> E1
+                                           |
+                                           |    args: balance
+                                           ---> body: (lambda (amount) ...)
+
+then the same let applies the unnamed function to the argument expression
+initial-amount.  We are still in frame E1 so initial-amount has value 100.
+To apply the function we make a new frame:
+
+E2:
+|--------------------|
+|balance: 100        |---> E1
+|--------------------|
+
+Then in that frame we evaluate the body, the lambda expression:
+
+                                     (function A) --> E2
+                                         |
+                                         |    args: amount
+                                         ---> body: (if ...)
+
+Then the outer define makes global W1 point to this function.
+
+Now we do (W1 50).  This creates a frame:
+
+E3:
+|------------|
+|amount:  50 |---> E2
+|------------|
+
+Frame E3 points to E2 because function A (i.e. W1) points to E2.
+Within frame E3 we evaluate the body of function A, the (if ...).
+During this evaluation the symbol AMOUNT is bound in E3, while
+BALANCE is bound in E2.  So the set! changes BALANCE in E2 from
+100 to 50.
+
+Now we make W2, creating two new frames in the process:
+
+E4:
+|--------------------|
+|initial-amount: 100 |---> global env
+|--------------------|
+
+                                       (function) --> E4
+                                           |
+                                           |    args: balance
+                                           ---> body: (lambda (amount) ...)
+
+E5:
+|--------------------|
+|balance: 100        |---> E4
+|--------------------|
+
+                                     (function B) --> E5
+                                         |
+                                         |    args: amount
+                                         ---> body: (if ...)
+
+Then the outer define makes global W2 point to this function.
+
+Summary: the two versions of make-withdraw create objects with the same
+behavior because in each case the functions A and B are defined within
+individual frames that bind BALANCE.  The environment structures differ
+because this new version has, for each account, an extra frame containing
+the binding for initial-amount.
+
+
+
+==================================================
+
+
+
+3.11  Message-passing example
+
+global env:
+|------------------------------|
+| make-account: --------------------> (function) ---> global env
+|                              |
+| acc: --(pointer added later)------> (function A below)
+|------------------------------|
+
+When we (define acc (make-account 50)), a new frame is created that
+includes both make-account's parameters (balance) and its internal
+definitions (withdraw, deposit, dispatch):
+
+E1:
+|------------------------------|
+| balance: 50                  |----> global env
+|                              |
+| withdraw: -------------------------> (function W) ---> E1
+|                              |
+| deposit: --------------------------> (function D) ---> E1
+|                              |
+| dispatch: -------------------------> (function A) ---> E1
+|------------------------------|
+
+(The arrow I have in the top right corner has nothing to do with the
+binding of BALANCE; it's the back pointer for this frame.)
+
+At this point the symbol ACC is bound, in the global environment, to
+function A.
+
+Now we do ((acc 'deposit) 40).
+
+E2:
+|--------------------|
+| m: deposit         |----> E1
+|--------------------|
+
+The above results from evaluating (acc 'deposit), whose returned value is
+function D above.
+
+E3:
+|--------------------|
+| amount: 40         |----> E1
+|--------------------|
+
+The above frame results from (D 40) [so to speak].  Note that its back
+pointer points to E1, not E2, because that's what D points to.  Now we
+evaluate the body of D, which includes (set! balance (+ balance amount))
+The value for AMOUNT comes from E3, and the value for BALANCE from E1.
+The set! changes the value to which BALANCE is bound in E1, from 50 to 90.
+
+((acc 'withdraw) 60)
+
+similarly creates two new frames:
+
+E4:
+|--------------------|
+| m: withdraw        |----> E1
+|--------------------|
+
+E5:
+|--------------------|
+| amount: 60         |----> E1
+|--------------------|
+
+Again BALANCE is changed in E1, which is where ACC's local state is kept.
+If we define another account ACC2, we'll produce a new frame E6 that has
+the same symbols bound that E1 does, but bound to different things.  The
+only shared environment frame between ACC1 and ACC2 is the global environment.
+The functions in E6 are *not* the same as the functions D, W, and A in E1.
+(They may, depending on the implementation, have the same list structure
+as their bodies, but they don't have the same environment pointers.)
+
+
+Extra for experts:
+
+First the easy part, generating unique symbols:
+
+(define gensym
+  (let ((number 0))
+    (lambda ()
+      (set! number (+ number 1))
+      (word 'g number))))
+
+Each call to GENSYM generates a new symbol of the form G1, G2, etc.
+(This isn't a perfect solution; what if there is a global variable
+named G1 that's used within the argument expression?  But we won't worry
+about that for now -- there are solutions, but they're pretty complicated.)
+
+The renaming procedure will need to keep an association list with
+entries converting symbols in the argument expression to gensymmed symbols.
+
+The problem says that all *local* variables are to be renamed.  Symbols
+that aren't bound within this expression (such as names of primitive
+procedures!) will remain unchanged in the result.
+
+(define (unique-rename exp)
+  (define (lookup sym alist)		; find replacement symbol
+    (let ((entry (assoc sym alist)))
+      (if entry
+	  (cdr entry)
+	  sym)))			; not in alist, keep original
+
+  (define (make-newnames vars)		; make (old . new) pairs for lambda
+    (map (lambda (var) (cons var (gensym))) vars))
+
+  (define (help exp alist)
+    (cond ((symbol? exp) (lookup sym alist))
+	  ((atom? exp) exp)		; self-evaluating
+	  ((equal? (car exp) 'lambda)
+	   (let ((newnames (make-newnames (cadr exp))))
+	     (let ((newalist (append newnames alist)))
+	       (cons 'lambda
+		     (cons (map cdr newalist)
+			   (map (lambda (subexp) (help subexp newalist))
+				(cddr exp)))))))
+	  (else (map (lambda (subexp) (help subexp alist)) exp))))
+  (help exp '()))
+
+There are four cases in the COND:
+1.  A symbol is replaced by its gensym equivalent.
+2.  A non-symbol atom is returned unchanged (self-evaluating expression).
+3.  A lambda expression is processed by making a new gensym name for each
+    of its parameters (found in the cadr of the lambda expression), then
+    making a new association list with these new pairs in front (so that
+    the new ones will be seen first by assoc and will take preference over
+    the same name used in an outer lambda), then recursively rename all the
+    expressions in the body of the lambda expression.
+4.  A compound expression that isn't a lambda is processed by recursively
+    renaming all its subexpressions.
+
+
+The way to use unique-rename to allow evaluation of Scheme programs
+with only one frame is that on every procedure call, the evaluator
+should call unique-rename on the procedure that the user is trying
+to call, then call the resulting modified procedure.  You can't just
+call unique-rename when the procedure is created (by a lambda
+expression), because of recursive procedures.  Many recursive
+invocations might be active at the same time, and each of them needs
+a unique renaming.
+
+We'll see that something very similar to this is actually done
+in the query-language evaluator in week 15.

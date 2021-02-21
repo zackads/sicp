@@ -1,0 +1,369 @@
+CS 61A		Homework and Laboratory Solutions	Week 3
+
+LABORATORY ASSIGNMENT:
+
+1.  How to reverse the order in which coins are tried?
+
+One solution is to reverse the order of the numbers in FIRST-DENOMINATION:
+
+(define (first-denomination kinds-of-coins)
+  (cond ((= kinds-of-coins 1) 50)
+	((= kinds-of-coins 2) 25)
+	((= kinds-of-coins 3) 10)
+	((= kinds-of-coins 4) 5)
+	((= kinds-of-coins 5) 1)))
+
+Another would be, using the original version of first-denomination, to
+change COUNT-CHANGE and CC so that the variable KINDS-OF-COINS counts
+upward instead of downward:
+
+(define (count-change amount)
+  (cc amount 1))
+
+(define (cc amount kinds-of-coins)
+  (cond ((= amount 0) 1)
+	((or (< amount 0) (> KINDS-OF-COINS 5)) 0)     ; changed here
+	(else (+ (cc (- amount
+			(first-denomination kinds-of-coins))
+		     kinds-of-coins)
+		 (cc amount
+		     (+ KINDS-OF-COINS 1))))))         ; changed here
+
+
+2.  Explore the efficiency.  Here is what happens with (cc 5 2) in the
+original order, as in the book:
+
+> (cc 5 2)
+"CALLED" cc 5 2
+ "CALLED" cc 0 2
+ "CALLED" cc 5 1
+  "CALLED" cc 4 1
+   "CALLED" cc 3 1
+    "CALLED" cc 2 1
+     "CALLED" cc 1 1
+      "CALLED" cc 0 1
+      "CALLED" cc 1 0
+     "CALLED" cc 2 0
+    "CALLED" cc 3 0
+   "CALLED" cc 4 0
+  "CALLED" cc 5 0
+2
+
+(I've deleted the "RETURNED" lines in the trace; it's easier to read this
+way and doesn't affect our analysis.)
+
+To try out just pennies and nickels backwards, I modified first-denomination
+this way:
+
+(define (first-denomination kinds-of-coins)
+  (cond ((= kinds-of-coins 1) 5)
+	((= kinds-of-coins 2) 1)))
+
+And here are the results:
+
+> (cc 5 2)
+"CALLED" cc 5 2
+ "CALLED" cc 4 2
+  "CALLED" cc 3 2
+   "CALLED" cc 2 2
+    "CALLED" cc 1 2
+     "CALLED" cc 0 2
+     "CALLED" cc 1 1
+      "CALLED" cc -4 1
+      "CALLED" cc 1 0
+    "CALLED" cc 2 1
+     "CALLED" cc -3 1
+     "CALLED" cc 2 0
+   "CALLED" cc 3 1
+    "CALLED" cc -2 1
+    "CALLED" cc 3 0
+  "CALLED" cc 4 1
+   "CALLED" cc -1 1
+   "CALLED" cc 4 0
+ "CALLED" cc 5 1
+  "CALLED" cc 0 1
+  "CALLED" cc 5 0
+2
+
+We get the same answer, but with 21 calls to CC instead of 13.  Why?
+The extra calls are for attempts to match a small amount of money
+with a large coin -- for example, to use a nickel in counting
+four cents.  When the coins are tried in the book's order, by the
+time we are thinking about four cents, we have already abandoned
+the idea of using nickels and so we quickly find the four-pennies
+solution.  But in backward order, we have to discover that a nickel
+is too big for four cents, and then that a nickel is too big for
+three cents, and so on.  (These situations give rise to the calls
+with a negative amount of money; notice that there aren't any like that
+in the first trace.)
+
+
+3.  Modify CC to take a sentence of denominations.
+
+(define (cc amount kinds-of-coins)
+  (cond ((= amount 0) 1)
+	((or (< amount 0) (EMPTY? KINDS-OF-COINS)) 0)
+	(else (+ (cc (- amount (FIRST KINDS-OF-COINS))
+		     kinds-of-coins)
+		 (cc amount (BUTFIRST KINDS-OF-COINS))))))
+
+
+4.  type-checking
+
+(define (type-check fn pred? value)
+  (if (pred? value)
+      (fn value)
+      #f))
+
+
+5.  build type-checking into function
+
+(define (make-safe fn pred?)
+  (lambda (value)
+    (if (pred? value)
+	(fn value)
+	#f)))
+
+
+
+HOMEWORK:
+
+1.  SICP exercises.
+
+1.16:  The goal is to use the algorithm of fast-exp on page 45, but avoid
+using the recursive call as an argument to something else.  The hint tells us
+to use an extra variable, a, which will contain part of the result.
+
+(define (fast-exp b n)
+  (define (iter a b n)
+    (cond ((= n 0) a)
+	  ((even? n) (iter a (square b) (/ n 2)))
+	  (else (iter (* a b) b (- n 1)))))
+  (iter 1 b n))
+
+We're supposed to keep the quantity a*b^n constant in all the invocations
+of ITER for any specific problem.  If n is even, we square b and divide n
+by 2, so we have
+	a * (b^2)^(n/2)
+which is indeed equal to a*b^n.  If n is odd, we have
+	(a * b) * b^(n-1)
+which is also equal to a*b^n.  So each invocation does keep the overall value
+constant.  When we get to n=0, therefore, the value of a must be the original
+value of b^n.
+
+It's important to pay attention to what the problem says about invariants;
+that's what this problem is about!
+
+
+1.35:  The definition of a fixed point is that it satisfies the equation
+f(x)=x.  In this case, f(x)=1 + (1/x), so we are looking for a number that
+satisfies
+	1 + (1/x) = x
+Multiply both sides by x and you get
+	x + 1 = x^2
+which is the definition of the golden ratio on page 38.
+
+Therefore we can compute phi by calling
+
+(fixed-point (lambda (x) (+ 1 (/ 1 x))) 1)
+
+
+1.37.  The simplest solution is probably the following, which uses a helper
+function but generates a recursive process:
+
+(define (cont-frac n d k)
+  (define (helper i)
+    (if (> i k)
+	0
+	(/ (n i) (+ (d i)
+		    (helper (+ i 1))))))
+  (helper 1))
+
+This says that
+
+	helper(1) = N(1)/[D(1)+helper(2)]
+	helper(2) = N(2)/[D(2)+helper(3)]
+
+and so on, until we reach the Kth term:
+
+	helper(K) = N(K)/[D(K)+0]
+
+In the iterative version, we first compute x = N(k)/D(k), then use that to
+compute N(k-1)/[D(k-1)+x], and so on until we reach the outermost fraction.
+
+(define (cont-frac n d k)
+  (define (iter k result)
+    (if (= k 0)
+	result
+	(iter (- k 1)
+	      (/ (n k) (+ (d k) result)))))
+  (iter k 0))
+
+Finally, here is a somewhat tricky version that avoids using a helper
+procedure, but requires changing the functions N and D in the recursive calls!
+
+(define (cont-frac n d k)
+  (if (= k 0)
+      0
+      (/ (n 1) (+ (d 1)
+		  (cont-frac (lambda (x) (n (+ x 1)))
+			     (lambda (x) (d (+ x 1)))
+			     (- k 1))))))
+
+Now for the computation of phi:
+
+(define (phi k)
+  (/ 1 (cont-frac (lambda (i) 1.0)
+		  (lambda (i) 1.0)
+		  k))
+
+> (phi 12)
+1.61805555555556
+> (phi 13)
+1.61802575107296
+
+
+1.38:  The numerator function is just (lambda (i) 1).  The denominator
+function must return 1 most of the time, but one out of three times it
+returns a computed even number instead.
+
+(define (e k)
+  (+ 2 (cont-frac (lambda (i) 1.0)
+		  (lambda (i)
+		    (if (= (remainder (- i 2) 3) 0)
+			(* 2 (+ 1 (quotient (- i 2) 3)))
+			1))
+		  k)))
+
+> (e 9)
+2.71828358208955
+
+
+2.  Find the third perfect number.
+
+The following solution uses a slightly non-obvious trick: when a factor is
+found, we add in both FACTOR and (/ N FACTOR) at the same time.  That is, when
+we find one factor, another factor is directly computable and need not be
+searched for.  As a result, we need only search numbers up to (SQRT N) instead
+of up to N or (/ N 2) as in the most straightforward approach.  This makes the
+program run in Theta(sqrt n) time instead of Theta(n), a substantial savings.
+
+If you didn't think of that trick, the structure of the solution would be
+essentially the same, except that the limit would be greater and only one
+factor would be added to the sum at a time.
+
+(define (perf? n)
+  (define (iter limit test sum)
+    (cond ((> test limit) sum)
+	  ((= (remainder n test) 0)
+	   (cond ((= test limit) (+ sum test))
+		 (else (iter limit (+ test 1) (+ sum test (/ n test))))))
+	  (else (iter limit (+ test 1) sum))))
+  (= n (iter (sqrt n) 2 1)))
+
+(define (next-perf n)
+  (cond	((< n 2) (next-perf 2))
+        ((perf? n) n)
+	(else (next-perf (+ n 1)))))
+
+==> (next-perf 29)
+496
+
+By the way, perfect numbers are related to another kind of number called
+Mersenne primes.  A Mersenne prime is a prime number of the form (2^p)-1 where
+p is prime.  (If p is composite, so is (2^p)-1.)  It turns out that if (2^p)-1
+is prime, then (2^(p-1))*((2^p)-1) is perfect.  So you can find perfect
+numbers by starting with small primes p, seeing if (2^p)-1 is prime, and if
+so, use the formula above.  What about the converse?  That is, must every
+perfect number fit this formula?  If so, the third perfect number must
+correspond to the third Mersenne prime.  It turns out that every even perfect
+number must fit the formula; it is not known (or at least not in 1974 when the
+number theory book I'm reading was published) whether or not there are any odd
+perfect numbers.  But there certainly aren't any small ones, so the third
+prime p=5 gives rise to the third Mersenne prime (2^5)-1 = 31 and thence to
+the third perfect number (2^4)*31 = 496.  If you know all that, you can solve
+the homework problem much more quickly.  The moral, as in the Pascal's
+Triangle problem discussed in lecture, is that understanding the problem
+better is often worth more than any amount of code mangling.  Thanks to Andy
+McFadden for calling my attention to this approach.
+
+
+
+3.  Changing the order of the base cases in CC.  The original version is
+
+(define (cc amount kinds-of-coins)
+  (cond ((= amount 0) 1)
+	((or (< amount 0) (= kinds-of-coins 0)) 0)
+	(else ...)))
+
+How can changing the order of the first two clauses matter?  It must
+be a situation in which *both* tests are satisfied.  Then the original
+program will give the result 1, while the reversed version will give
+the result 0.  But if both tests are satisfied, AMOUNT must be zero,
+because of the first clause above.  So it can't be less than zero also.
+Therefore, the only way the second test can be satisfied is if
+KINDS-OF-COINS is also zero.  With the original version, (cc 0 0) will
+give the result 1, whereas with the reordered version, (cc 0 0) will be 0.
+
+As it turns out, no possible argument to COUNT-CHANGE will give rise to a call
+to CC with both arguments zero.  Therefore, it's fair to say that this
+difference doesn't really make a difference, if you think of CC as just a
+helper procedure of COUNT-CHANGE and not as something that could be called
+independently for its own sake.  But it's not quite trivial to *prove* that CC
+is never called with both arguments zero.  The key point is that in each of
+the two recursive invocations of CC, one argument changes and the other
+remains the same.  Therefore, unless one of the arguments was zero in the
+outer invocation, both can't be zero in the recursive invocation.  But if
+either argument is zero we don't get to the recursive invocations; one of the
+base cases will come into play instead.
+
+What's the right answer to (cc 0 0)?  That is, how many ways can we count out
+zero cents using no coins?  One way -- use no coins!  So the book's order is
+correct.
+
+
+4.  Formula for exp-iter invariant
+
+The product of PRODUCT times [B to the COUNTER power]
+is always equal to [B to the N power].
+
+
+
+EXTRA FOR EXPERTS:
+
+1.
+
+(define (partitions num)
+  (pp num num))
+
+(define (pp num chunk)
+  (cond ((= num 0) 1)
+	((or (< num 0) (= chunk 0)) 0)
+	(else (+ (pp (- num chunk) chunk)
+		 (pp num (- chunk 1))))))
+
+2.
+
+Counting partitions is like making change, where the coins are
+all the positive integers.
+
+3.
+
+The helper procedure takes an additional argument, called a *continuation*,
+which in effect says "what should I do with my result?"  It's a function that
+takes a (partial) result as its argument.  So in the base cases, instead of
+returning 1 or 0, we call (next 1) or (next 0):
+
+(define (partitions num)
+  (pp num num (lambda (result) result)))
+
+(define (pp num chunk next)
+  (cond ((= num 0) (next 1))
+  	((or (< num 0) (= chunk 0)) (next 0))
+	(else (pp (- num chunk)
+		  chunk
+		  (lambda (result1)
+		    (pp num
+			(- chunk 1)
+			(lambda (result2)
+			  (next (+ result1 result2)))))))))

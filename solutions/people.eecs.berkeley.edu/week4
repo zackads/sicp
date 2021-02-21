@@ -1,0 +1,152 @@
+CS 61A			Week 4 solutions
+
+LAB EXERCISES:
+
+1.  Error message hunt
+
++: not a number: foo
+unbound variable: zot
+eval: bad function in : (3)
+too many arguments to: (bf 3 5)
+random: bad number: -7
+sqrt: number is negative: -6
+Invalid argument to FIRST: ()
+Argument to SENTENCE not a word or sentence:#f
+define: bad variable name: 5
+
+2.  Tracing
+
+In a base-case call, the return value comes right after the call:
+
+STk> (fib 5)
+.. -> fib with n = 5
+.... -> fib with n = 4
+...... -> fib with n = 3
+........ -> fib with n = 2
+.......... -> fib with n = 1	<=== Here's a base case
+.......... <- fib returns 1	<=== with its return value
+.......... -> fib with n = 0
+.......... <- fib returns 0
+........ <- fib returns 1
+........ -> fib with n = 1
+........ <- fib returns 1
+...... <- fib returns 2
+...... -> fib with n = 2
+........ -> fib with n = 1
+........ <- fib returns 1
+........ -> fib with n = 0
+........ <- fib returns 0
+...... <- fib returns 1
+.... <- fib returns 3
+.... -> fib with n = 3
+...... -> fib with n = 2
+........ -> fib with n = 1
+........ <- fib returns 1
+........ -> fib with n = 0
+........ <- fib returns 0
+...... <- fib returns 1
+...... -> fib with n = 1
+...... <- fib returns 1
+.... <- fib returns 2
+.. <- fib returns 5
+5
+
+I count eight base-case calls.
+
+
+HOMEWORK:
+---------
+
+1.  Start by tracing it out (mentally or online):
+
+(fact 5)
+(iter 1 1)
+(iter 1 2)
+(iter 2 3)
+(iter 6 4)
+(iter 24 5)
+(iter 120 6)
+
+What jumps out is that the first argument to ITER is always the factorial
+of something.  Of what?  One less than the second argument.  So the
+invariant is
+
+	product = (counter-1)!
+
+2.  Tracing again:
+
+(fact 5)
+(helper 1 5)
+(helper 5 4)
+(helper 20 3)
+(helper 60 2)
+(helper 120 1)
+(helper 120 0)
+
+This time, RESULT isn't the factorial of anything until the end.  The
+invariant is a little harder to find, but at each step, the work still
+undone is the factorial of COUNTER, so the invariant turns out to be
+
+	n! = result * counter!
+
+3.  Trace:
+
+(pigl 'scheme)
+(pighelp 'scheme)
+(pighelp 'chemes)
+(pighelp 'hemesc)
+(pighelp 'emesch)
+
+What's invariant is that all of these words have the same translation
+into Pig Latin:
+
+	(pigl wd) = (pigl wrd)
+
+4.  In question 3, we had the name WD for our original argument, and the
+name WRD for the current argument to the helper.  In the simpler procedure,
+there is no helper, and there's only one formal parameter, WD, to talk
+about.  So we have to say something like
+
+	(pigl of currnt wd) = (pigl of original wd)
+
+
+5.  The domain of pigl is words that contain a vowel.
+
+
+6.  Here's something else we can say about each iteration:
+
+	The number of initial non-vowels in WD is reduced by one.
+
+For words in the domain, the number of initial non-vowels is a nonnegative
+integer, and there is always a vowel following them.  If the number of
+initial non-vowels is N, then after N iterations, the first letter is a
+vowel.  So the process reaches the base case.
+
+But, by the invariant, we know that the value returned in the base case
+is equal to the Pig Latin translation of the original WD.
+
+
+7.  REST-OF-DECK is of type HAND; it's a sentence of cards.
+
+There are two approaches to documenting this.  One is to say, in the initial
+listing of data types, that the names HAND and DECK are equivalent, and both
+refer to a sentence of cards.  Then the name REST-OF-DECK is self-documenting.
+The other is to put a comment in the procedure saying that REST-OF-DECK is
+a hand.
+
+
+Extra for experts:
+------------------
+
+; SORT carries out a bubble sort algorithm.
+; SENT is a sentence of numbers.
+; 
+; Subprocedure BUBBLE returns a sentence of the same numbers as in its
+; argument, but reordered so that the largest number is at the end.
+; There is no guarantee about the order of other numbers in the sentence.
+;
+; SORT calls BUBBLE repeatedly.  Each time one number bubbles to the end,
+; and then SORT recursively bubble-sorts the remaining numbers.
+
+I didn't use any invariants, etc., although that could be done.  I just
+found it more helpful to explain the algorithm in general terms.

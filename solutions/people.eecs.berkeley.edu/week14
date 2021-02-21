@@ -1,0 +1,1404 @@
+CS61A	Week 11 solutions
+
+LAB:
+----
+
+4.27  Lazy vs. mutation
+
+The first time you type COUNT you get 1; the second time you get 2.
+Why?  When you say
+	(define w (id (id 10)))
+the DEFINE special form handler eval-definition EVALs its second
+argument (id (id 10)).  Given an application, EVAL calls APPLY
+to invoke ID for the outer invocation, but the inner invocation
+is providing an argument to a compound procedure, so it's delayed.
+That's why COUNT is 1 -- the outer call to ID has actually happened,
+but not the inner one.
+
+The value of W is therefore a promise to compute (id 10), since
+ID returns its argument.  When you ask the evaluator to print W,
+that promise is fulfilled, and so COUNT becomes 2.
+
+
+4.29  Memoizing or not
+
+You'd expect a program that uses the same argument repeatedly to
+be most strongly affected.  For example, I wrote
+
+(define (n-copies n stuff)
+  (if (= n 0)
+      '()
+      (cons stuff (n-copies (- n 1) stuff))))
+
+Then if you use n-copies with something requiring a fair amount
+of computation, such as
+
+(n-copies 6 (factorial 7))
+
+you can see a dramatic difference.
+
+About their square/id example, remember to (set! count 0) before
+each experiment.  Then the memoizing version leaves count at 1,
+whereas the non-memoizing version sets count to 2.
+
+
+
+4.35 an-integer-between
+
+(define (an-integer-between low high)
+  (if (> low high)
+      (amb)
+      (amb low (an-integer-between (+ low 1) high))))
+
+
+4.38 adjacent floors
+
+Remove the line (require (not (= (abs (- smith fletcher)) 1)))
+
+
+[The continuation part of the lab was just try-this.]
+
+
+
+HOMEWORK:
+---------
+
+
+4.25  UNLESS in normal vs. applicative order
+
+In ordinary (applicative order) Scheme, this version of FACTORIAL
+will be an infinite loop, because the argument subexpression
+(* n (factorial (- n 1))) is evaluated before UNLESS is called,
+whether or not n is 1.
+
+In normal order Scheme it'll work fine, because the argument
+subexpressions aren't evaluated until they're needed.  What
+will actually happen is that each use of the special form IF
+within UNLESS will force the computation of (= n 1), but
+no multiplications will happen until the evaluator tries to
+print the result.  In effect, (factorial 5) returns the thunk
+        (lambda () (* 5 (* 4 (* 3 (* 2 (* 1 1))))))
+and that gets evaluated just in time to print the answer.
+
+
+4.26  Normal order vs. special forms
+
+For Ben's side of the argument we must implement UNLESS as a
+derived expression:
+
+(define (unless->if exp)
+  (make-if (unless-predicate exp)
+	   (unless-consequent exp)
+	   (unless-alternative exp)))
+
+(define unless-predicate cadr)
+(define unless-alternative caddr)
+(define unless-consequent cadddr)
+
+Notice that we reversed the order of the last two subexpressions in
+the call to make-if.
+
+Then we just add a clause
+        ((unless? exp) (eval (unless->if exp) env))
+to the ordinary metacircular evaluator, or
+        ((unless? exp) (analyze (unless->if exp)))
+to the analyzing evaluator.
+
+For Alyssa's side of the argument, we need a case in which it's useful to
+have a Scheme special form available as an ordinary procedure.  The only
+thing we can do with ordinary procedures but not with special forms is use
+them as arguments to higher-order procedures.  An example using UNLESS will
+be a little strained, so first we'll look at a more common situation
+involving a different special form, namely AND.  We'd like to be able to say
+
+(define (all-true? tf-list)
+  (accumulate and tf-list))
+
+Now, here's the strained example using UNLESS:  Suppose we have a list of
+true-false values and we'd like to add up the number of true ones.  Here's a
+somewhat strange way to do it:
+
+(define zero-list (cons 0 '()))
+(set-cdr! zero-list zero-list)
+
+(define one-list (cons 1 '()))
+(set-cdr! one-list one-list)
+
+(define (howmany-true tf-list)
+  (apply + (map unless tf-list zero-list one-list)))
+
+Zero-list is an infinite list of zeros; one-list is an infinite list
+of ones.  We make use of the fact that MAP's end test is that its
+first argument is empty, so MAP will return a list the same size as
+the argument tf-list.  For example, if tf-list is
+        (#t #t #f #t)
+then map will return
+        (1 1 0 1)
+created, in effect, this way:
+        (list (unless #t 0 1)
+	      (unless #t 0 1)
+	      (unless #f 0 1)
+	      (unless #t 0 1))
+And so + will return 3, the number of trues in the list.
+
+
+4.28  Why force the operator of a combination?
+
+Thunks are made by APPLY, representing arguments to defined procedures.
+So we need a case in which the operator of an expression is the returned
+argument of a defined procedure.  Here's an example:
+
+(((lambda (a b) a) + -) 2 3)
+
+
+4.30  Side effects vs. lazy evaluation
+
+(a) Why is Ben right about for-each?
+
+For-each includes the expression (proc (car items)).  As we
+discussed in ex. 4.28, the lazy evaluator will force the
+operator of that expression, i.e., PROC.  The resulting
+procedure has two invocations of primitives, NEWLINE and
+DISPLAY.  Evaluating those invocations will actually call
+the procedures, and the argument X to DISPLAY will be
+evaluated because DISPLAY is primitive.
+
+(b) What happens in Cy's example?
+
+First of all, in ordinary Scheme both (p1 1) and (p2 1) give
+the result (1 2).
+
+With the book's version of eval-sequence, (p1 1) is still (1 2)
+but (p2 1) is 1, because the SET! will never happen.  The
+subprocedure P has a two-expression sequence as its body, and
+the first expression will never be evaluated.
+
+With Cy's version both (p1 1) and (p2 1) are (1 2), as in
+ordinary Scheme.
+
+(c) Why doesn't Cy's version change part (a)?
+
+The change isn't as dramatic as it may seem.  Don't think that
+the original eval-sequence calls delay-it!  It calls EVAL, and
+most of the time EVAL does return a value, not a thunk.  In
+particular, a procedure call is carried out right away; it's
+only the *arguments* to the procedure that are delayed.  That's
+why Cy had to use a weird example in which a SET! expression
+is used as an argument to a procedure in order to get the wrong
+result.
+
+(d) What's the right thing to do?
+
+The combination of lazy evaluation and mutation in the same language
+is so confusing that programmers would be surprised no matter which
+choice we made.  That's why, in the real world, the languages that
+use normal order evaluation are *functional* languages in which
+there is no mutation or other side effects.  In such a language,
+there are no sequences (if there are no side effects, what would
+be the point?) and the problem doesn't arise.
+
+But if we really wanted to have a normal-order Scheme, we'd
+probably want to change the semantics of the language as little
+as possible -- programs that work in ordinary Scheme should work
+in lazy Scheme too.  So I think Cy is right.
+
+
+4.32  Lazy trees
+
+One possibility is to use doubly-lazy lists as an alternative to
+interleaving, when dealing with a naturally two-dimensional problem.
+For example, to get pairs of integers, we could say
+
+(define (pairs a b)
+  (cons (map (lambda (x) (cons (car a) x)) b)
+	(pairs (cdr a) b)))
+
+Then we could use this data structure with two-dimensional versions
+of the usual higher order procedures.  For example:
+
+(define (2dfilter pred s)
+  (if (null? s)
+      '()
+      (cons (filter pred (car s))
+	    (2dfilter pred (cdr s)))))
+
+
+4.33  Quoted lazy lists
+
+Instead of
+        ((quoted? exp) (text-of-quotation exp))
+we need a more complicated treatment to turn the ordinary lists
+of the underlying Scheme into lazy lists.
+
+        ((quoted? exp) (process-quotation (text-of-quotation exp) env))
+
+(define (process-quotation quoted env)
+  (if (pair? quoted)
+      (lazy-cons (process-quotation (car quoted) env)
+		 (process-quotation (cdr quoted) env)
+		 env)
+      quoted))
+
+(define (lazy-cons x y env)
+  (make-procedure '(m) (list (list 'm x y)) env))
+
+or alternatively
+
+(define (lazy-cons x y env)
+  (apply (lookup-variable-value 'cons env)
+	 (list x y)))
+
+This lazy-cons is the below-the-line equivalent of the above-the-line
+CONS on page 409.
+
+
+
+4.36 all Pythagorean triples
+
+Replacing an-integer-between with an-integer-starting-from won't
+work because the AMB that provides the value for K will never fail,
+and so I and J will always be 1 forever.
+
+To make this work, we note that K must always be larger than I or J,
+so I and J can be restricted to finite ranges if we choose a value
+for K first:
+
+(define (a-pythgorean-triple)
+  (let ((k (an-integer-starting-from 1)))
+    (let ((i (an-integer-between 1 (- k 1))))
+      (let ((j (an-integer-between i (- k 1))))
+	(require (= (+ (* i i) (* j j)) (* k k)))
+	(list i j k)))))
+
+
+4.42 liars
+
+(define (liars)
+  (define (onetrue? x y)
+    (if x (if y #f #t) y))
+  (let ((betty (amb 1 2 3 4 5))
+	(ethel (amb 1 2 3 4 5))
+	(joan (amb 1 2 3 4 5))
+	(kitty (amb 1 2 3 4 5))
+	(mary (amb 1 2 3 4 5)))
+    (require (distinct? (list betty ethel joan kitty mary)))
+    (require (onetrue? (= kitty 2) (= betty 3)))
+    (require (onetrue? (= ethel 1) (= joan 2)))
+    (require (onetrue? (= joan 3) (= ethel 5)))
+    (require (onetrue? (= kitty 2) (= mary 4)))
+    (require (onetrue? (= mary 4) (= betty 1)))
+    (list (list 'betty betty) (list 'ethel ethel) (list 'joan joan)
+	  (list 'kitty kitty) (list 'mary mary))))
+
+As in the multiple dwelling puzzle, this program can be made much more
+efficient by checking for distinct values as we go along instead of
+after all values have been assigned:
+
+(let ((betty (amb 1 2 3 4 5))
+      (ethel (amb 1 2 3 4 5)))
+  (require (distinct? (list betty ethel)))
+  (let ((joan (amb 1 2 3 4 5)))
+    (require (distinct? (list betty ethel joan)))
+    ...
+
+
+4.45 ambiguous sentence
+
+(sentence
+ (simple-noun-phrase (article the) (noun professor))
+ (verb-phrase
+  (verb lectures)
+  (prep-phrase (prep to)
+	       (noun-phrase
+		(simple-noun-phrase (article the) (noun student))
+		(prep-phrase (prep in)
+			     (noun-phrase
+			      (simple-noun-phrase (article the) (noun class))
+			      (prep-phrase (prep with)
+					   (simple-noun-phrase (article the)
+							       (noun cat)))))))))
+
+This version means that a cat is a student in the class, and the professor
+lectures to another student in the class.
+
+(sentence
+ (simple-noun-phrase (article the) (noun professor))
+ (verb-phrase
+  (verb lectures)
+  (prep-phrase (prep to)
+	       (noun-phrase
+		(noun-phrase
+		 (simple-noun-phrase (article the) (noun student))
+		 (prep-phrase (prep in)
+			      (simple-noun-phrase (article the) (noun class))))
+		(prep-phrase (prep with)
+			     (simple-noun-phrase (article the)
+						 (noun cat)))))))
+
+This version means that the professor lectures to a student, and that that
+student is in the class and has a cat, which may or may not be present.
+
+(sentence
+ (simple-noun-phrase (article the) (noun professor))
+ (verb-phrase
+  (verb-phrase
+   (verb lectures)
+   (prep-phrase (prep to)
+		(noun-phrase
+		 (simple-noun-phrase (article the) (noun student))
+		 (prep-phrase (prep in)
+			      (simple-noun-phrase (article the) (noun class))))))
+  (prep-phrase (prep with)
+	       (simple-noun-phrase (article the)
+				   (noun cat)))))
+
+This version means that the professor brings a cat along while lecturing
+to the student who is in the class.
+
+(sentence
+ (simple-noun-phrase (article the) (noun professor))
+ (verb-phrase
+  (verb-phrase
+   (verb-phrase
+    (verb lectures)
+    (prep-phrase (prep to)
+		 (noun-phrase
+		  (simple-noun-phrase (article the) (noun student)))))
+   (prep-phrase (prep in)
+		(simple-noun-phrase (article the) (noun class))))
+  (prep-phrase (prep with)
+	       (simple-noun-phrase (article the)
+				   (noun cat)))))
+
+This version means that the professor does the lecturing in the class,
+bringing a cat along, to some student about whom we know nothing.
+
+(sentence
+ (simple-noun-phrase (article the) (noun professor))
+ (verb-phrase
+  (verb-phrase
+   (verb lectures)
+   (prep-phrase (prep to)
+		(noun-phrase
+		 (simple-noun-phrase (article the) (noun student)))))
+  (prep-phrase (prep in)
+	       (noun-phrase
+		(simple-noun-phrase (article the) (noun class))
+		(prep-phrase (prep with)
+			     (simple-noun-phrase (article the)
+						 (noun cat)))))))
+
+This version means that the professor does the lecturing in a class
+that includes a cat as a member, to a student about whom we know nothing.
+
+
+4.47 left-recursive grammar
+
+As Louis' programs go, this one is pretty successful!  It does generate
+the two correct parsings for "The professor lectures to the student
+with the cat," in the opposite order from what's shown in the book.
+But if you say try-again again, instead of reporting that there are
+no more values, the parser gets in an infinite loop.
+
+What happens is this:  (parse-word verbs) fails, so parse-verb-phrase
+is called recursively.  In that recursive call, (parse-word verbs) fails,
+so parse-verb-phrase is called recursively.  In that recursive call...
+and so on.
+
+Interchanging the order of expressions in the AMB just makes things
+worse; this infinite recursion happens the *first* time, so you don't
+even see the correct parsings before it loops.
+
+
+4.48 grammar extensions
+
+For compound sentences, first rename parse-sentence as parse-simple-sentence:
+
+(define (parse-simple-sentence)
+  (list 'simple-sentence
+	(parse-noun-phrase)
+	(parse-verb-phrase)))
+
+(define (parse-sentence)
+  (define (maybe-extend sentence)
+    (amb sentence
+	 (maybe-extend (list 'sentence
+			     sentence
+			     (parse-word connectors)
+			     (parse-simple-sentence)))))
+  (maybe-extend (parse-simple-sentence)))
+
+(define connectors '(connector and or but))
+
+For adjectives, we have to provide for the possibility of them
+between the article and the noun:
+
+(define (parse-simple-noun-phrase)
+  (cons 'simple-noun-phrase
+	(append (list (parse-word articles))
+		(maybe-some adjectives)
+		(list (parse-word nouns)))))
+
+(define adjectives '(adjective big tiny silly robust enthusiastic))
+
+(define (maybe-some words)
+  (amb (cons (parse-word words)
+	     (maybe-some words))
+       '()))
+
+Note that unlike most of the parsing procedures, maybe-some doesn't fail if
+it can't find what it wants.  If it can't find any adjectives it just
+returns an empty list.  That's why parse-simple-noun-phrase has to use
+append, to avoid seeing
+
+    (simple-noun-phrase (article the) () (noun cat))
+
+Adverbs are similar except that they go into parse-verb-phrase.
+
+
+4.49  generating sentences
+
+(define (parse-word word-list)
+  (define (iter words)
+    (if (null? words)
+	(amb)
+	(amb (car words) (iter (cdr words)))))
+  (list (car word-list) (iter (cdr word-list))))
+
+Here are the first several sentences it creates:
+(sentence (noun-phrase (article the) (noun student)) (verb studies))
+(sentence (noun-phrase (article the) (noun student)) (verb lectures))
+(sentence (noun-phrase (article the) (noun student)) (verb eats))
+(sentence (noun-phrase (article the) (noun student)) (verb sleeps))
+(sentence (noun-phrase (article the) (noun professor)) (verb studies))
+(sentence (noun-phrase (article the) (noun professor)) (verb lectures))
+(sentence (noun-phrase (article the) (noun professor)) (verb eats))
+(sentence (noun-phrase (article the) (noun professor)) (verb sleeps))
+(sentence (noun-phrase (article the) (noun cat)) (verb studies))
+
+
+4.50  random choice
+
+We must write ANALYZE-RAMB, a variant on the ANALYZE-AMB of p. 434:
+
+(define (analyze-ramb exp)
+  (let ((cprocs (map analyze (amb-choices exp))))
+    (lambda (env succeed fail)
+      (define (try-next choices)
+	(if (null? choices)
+	    (fail)
+	    (let ((random-order (rotate choices (random (length choices)))))
+	      ((car random-order) env
+	                          succeed
+	                          (lambda ()
+				    (try-next (cdr random-order)))))))
+      (try-next cprocs))))
+
+(define (rotate seq num)
+  (if (= num 0)
+      seq
+      (rotate (append (cdr seq) (list (car seq)))
+	      (- num 1)))
+
+Then we must add a clause to ANALYZE to check for and handle RAMB,
+similar to the one for AMB.
+
+
+It's not actually so easy to use RAMB to get good sentences.  The problem
+is that we really don't want a more complicated choice to be just as likely
+as a simple choice, or our sentences will be too long.  If we change
+every AMB in the parser to RAMB, I get these results:
+
+[Note: The second one is really long!  I suggest reading this in emacs
+and using control-meta-F to skip over it.]
+
+(sentence
+ (noun-phrase
+  (simple-noun-phrase (article the) (noun professor))
+  (prep-phrase (prep with)
+	       (noun-phrase
+		(simple-noun-phrase (article a) (noun cat))
+		(prep-phrase (prep for)
+			     (simple-noun-phrase (article a) (noun student))))))
+ (verb studies))
+
+(sentence
+ (noun-phrase
+  (simple-noun-phrase (article the) (noun professor))
+  (prep-phrase (prep with)
+	       (noun-phrase
+		(simple-noun-phrase (article a) (noun cat))
+		(prep-phrase (prep for)
+			     (simple-noun-phrase (article a)
+						 (noun student))))))
+ (verb-phrase
+  (verb-phrase
+   (verb studies)
+   (prep-phrase
+    (prep to)
+    (noun-phrase
+     (noun-phrase
+      (noun-phrase
+       (noun-phrase
+	(simple-noun-phrase (article the) (noun professor))
+	(prep-phrase
+	 (prep in)
+	 (noun-phrase
+	  (noun-phrase
+	   (noun-phrase
+	    (simple-noun-phrase (article the) (noun professor))
+	    (prep-phrase
+	     (prep by)
+	     (noun-phrase
+	      (simple-noun-phrase (article a) (noun class))
+	      (prep-phrase
+	       (prep with)
+	       (noun-phrase
+		(noun-phrase
+		 (simple-noun-phrase (article a) (noun student))
+		 (prep-phrase
+		  (prep to)
+		  (simple-noun-phrase (article the) (noun student))))
+		(prep-phrase
+		 (prep for)
+		 (noun-phrase
+		  (noun-phrase
+		   (simple-noun-phrase (article the) (noun class))
+		   (prep-phrase
+		    (prep for)
+		    (noun-phrase
+		     (simple-noun-phrase (article a) (noun student))
+		     (prep-phrase
+		      (prep with)
+		      (simple-noun-phrase (article the) (noun professor))))))
+		  (prep-phrase
+		   (prep for)
+		   (noun-phrase
+		    (noun-phrase
+		     (noun-phrase
+		      (simple-noun-phrase (article the) (noun professor))
+		      (prep-phrase
+		       (prep for)
+		       (simple-noun-phrase (article the) (noun student))))
+		     (prep-phrase
+		      (prep for)
+		      (noun-phrase
+		       (simple-noun-phrase (article the) (noun class))
+		       (prep-phrase
+			(prep to)
+			(simple-noun-phrase (article a) (noun professor))))))
+		    (prep-phrase
+		     (prep to)
+		     (noun-phrase
+		      (simple-noun-phrase (article the) (noun student))
+		      (prep-phrase
+		       (prep to)
+		       (noun-phrase
+			(simple-noun-phrase (article a) (noun professor))
+			(prep-phrase
+			 (prep for)
+			 (simple-noun-phrase (article a)
+					     (noun student))))))))))))))))
+	   (prep-phrase
+	    (prep for)
+	    (simple-noun-phrase (article the) (noun student))))
+	  (prep-phrase
+	   (prep with)
+	   (noun-phrase
+	    (simple-noun-phrase (article a) (noun student))
+	    (prep-phrase
+	     (prep to)
+	     (noun-phrase
+	      (noun-phrase
+	       (noun-phrase
+		(noun-phrase
+		 (simple-noun-phrase (article the) (noun student))
+		 (prep-phrase
+		  (prep in)
+		  (simple-noun-phrase (article the) (noun cat))))
+		(prep-phrase
+		 (prep for)
+		 (noun-phrase
+		  (noun-phrase
+		   (noun-phrase
+		    (simple-noun-phrase (article the) (noun student))
+		    (prep-phrase
+		     (prep with)
+		     (noun-phrase
+		      (simple-noun-phrase (article a) (noun student))
+		      (prep-phrase
+		       (prep for)
+		       (noun-phrase
+			(noun-phrase
+			 (simple-noun-phrase (article a) (noun professor))
+			 (prep-phrase
+			  (prep for)
+			  (noun-phrase
+			   (noun-phrase
+			    (simple-noun-phrase (article a) (noun professor))
+			    (prep-phrase
+			     (prep for)
+			     (simple-noun-phrase (article the)
+						 (noun student))))
+			   (prep-phrase
+			    (prep with)
+			    (simple-noun-phrase (article a)
+						(noun professor))))))
+			(prep-phrase
+			 (prep to)
+			 (noun-phrase
+			  (noun-phrase
+			   (simple-noun-phrase (article the) (noun student))
+			   (prep-phrase
+			    (prep with)
+			    (noun-phrase
+			     (simple-noun-phrase (article a) (noun student))
+			     (prep-phrase
+			      (prep to)
+			      (simple-noun-phrase (article the)
+						  (noun class))))))
+			  (prep-phrase
+			   (prep for)
+			   (simple-noun-phrase (article the)
+					       (noun student))))))))))
+		   (prep-phrase
+		    (prep for)
+		    (noun-phrase
+		     (simple-noun-phrase (article a) (noun professor))
+		     (prep-phrase
+		      (prep with)
+		      (noun-phrase
+		       (simple-noun-phrase (article a) (noun professor))
+		       (prep-phrase
+			(prep for)
+			(simple-noun-phrase (article the) (noun student))))))))
+		  (prep-phrase
+		   (prep for)
+		   (simple-noun-phrase (article the) (noun class))))))
+	       (prep-phrase
+		(prep to)
+		(simple-noun-phrase (article the) (noun class))))
+	      (prep-phrase
+	       (prep in)
+	       (simple-noun-phrase (article a) (noun student))))))))))
+       (prep-phrase
+	(prep to)
+	(noun-phrase
+	 (noun-phrase
+	  (noun-phrase
+	   (simple-noun-phrase (article the) (noun professor))
+	   (prep-phrase
+	    (prep for)
+	    (noun-phrase
+	     (noun-phrase
+	      (simple-noun-phrase (article the) (noun student))
+	      (prep-phrase
+	       (prep in)
+	       (simple-noun-phrase (article a) (noun student))))
+	     (prep-phrase
+	      (prep with)
+	      (noun-phrase
+	       (simple-noun-phrase (article a) (noun class))
+	       (prep-phrase
+		(prep to)
+		(simple-noun-phrase (article a) (noun professor))))))))
+	  (prep-phrase
+	   (prep in)
+	   (noun-phrase
+	    (simple-noun-phrase (article the) (noun professor))
+	    (prep-phrase
+	     (prep for)
+	     (noun-phrase
+	      (noun-phrase
+	       (noun-phrase
+		(noun-phrase
+		 (simple-noun-phrase (article the) (noun professor))
+		 (prep-phrase
+		  (prep for)
+		  (simple-noun-phrase (article the) (noun student))))
+		(prep-phrase
+		 (prep for)
+		 (noun-phrase
+		  (noun-phrase
+		   (noun-phrase
+		    (simple-noun-phrase (article the) (noun professor))
+		    (prep-phrase
+		     (prep to)
+		     (noun-phrase
+		      (simple-noun-phrase (article a) (noun student))
+		      (prep-phrase
+		       (prep for)
+		       (noun-phrase
+			(simple-noun-phrase (article a) (noun student))
+			(prep-phrase
+			 (prep for)
+			 (simple-noun-phrase (article a) (noun student))))))))
+		   (prep-phrase
+		    (prep for)
+		    (noun-phrase
+		     (simple-noun-phrase (article the) (noun student))
+		     (prep-phrase
+		      (prep for)
+		      (simple-noun-phrase (article a) (noun professor))))))
+		  (prep-phrase
+		   (prep to)
+		   (noun-phrase
+		    (simple-noun-phrase (article a) (noun professor))
+		    (prep-phrase
+		     (prep for)
+		     (noun-phrase
+		      (simple-noun-phrase (article the) (noun student))
+		      (prep-phrase
+		       (prep in)
+		       (noun-phrase
+			(simple-noun-phrase (article the) (noun student))
+			(prep-phrase
+			 (prep in)
+			 (noun-phrase
+			  (simple-noun-phrase (article the) (noun professor))
+			  (prep-phrase
+			   (prep to)
+			   (noun-phrase
+			    (simple-noun-phrase (article the) (noun class))
+			    (prep-phrase
+			     (prep in)
+			     (noun-phrase
+			      (simple-noun-phrase (article the)
+						  (noun professor))
+			      (prep-phrase
+			       (prep to)
+			       (simple-noun-phrase
+				(article a)
+				(noun class))))))))))))))))))
+	       (prep-phrase
+		(prep for)
+		(noun-phrase
+		 (simple-noun-phrase (article a) (noun cat))
+		 (prep-phrase
+		  (prep to)
+		  (simple-noun-phrase (article a) (noun student))))))
+	      (prep-phrase
+	       (prep to)
+	       (simple-noun-phrase (article a) (noun class))))))))
+	 (prep-phrase
+	  (prep for)
+	  (simple-noun-phrase (article a) (noun professor))))))
+      (prep-phrase
+       (prep to)
+       (noun-phrase
+	(noun-phrase
+	 (noun-phrase
+	  (noun-phrase
+	   (simple-noun-phrase (article the) (noun class))
+	   (prep-phrase
+	    (prep by)
+	    (noun-phrase
+	     (noun-phrase
+	      (noun-phrase
+	       (noun-phrase
+		(noun-phrase
+		 (simple-noun-phrase (article the) (noun professor))
+		 (prep-phrase
+		  (prep to)
+		  (simple-noun-phrase (article the) (noun student))))
+		(prep-phrase
+		 (prep for)
+		 (simple-noun-phrase (article the) (noun professor))))
+	       (prep-phrase
+		(prep for)
+		(simple-noun-phrase (article the) (noun student))))
+	      (prep-phrase
+	       (prep in)
+	       (simple-noun-phrase (article the) (noun professor))))
+	(prep-phrase
+	 (prep for)
+	 (simple-noun-phrase (article a) (noun student))))))
+	  (prep-phrase
+	   (prep to)
+	   (simple-noun-phrase (article a) (noun student))))
+	 (prep-phrase
+	  (prep in)
+	  (noun-phrase
+	   (simple-noun-phrase (article a) (noun student))
+	   (prep-phrase
+	    (prep with)
+	    (noun-phrase
+	     (noun-phrase
+	      (simple-noun-phrase (article a) (noun class))
+	      (prep-phrase
+	       (prep for)
+	       (simple-noun-phrase (article a) (noun professor))))
+	     (prep-phrase
+	      (prep for)
+	      (noun-phrase
+	       (noun-phrase
+		(noun-phrase
+		 (noun-phrase
+		  (simple-noun-phrase (article the) (noun cat))
+		  (prep-phrase
+		   (prep for)
+		   (simple-noun-phrase (article a) (noun professor))))
+		 (prep-phrase
+		  (prep for)
+		  (noun-phrase
+		   (simple-noun-phrase (article the) (noun class))
+		   (prep-phrase
+		    (prep with)
+		    (noun-phrase
+		     (noun-phrase
+		      (simple-noun-phrase (article the) (noun professor))
+		      (prep-phrase
+		       (prep with)
+		       (simple-noun-phrase (article a) (noun student))))
+		     (prep-phrase
+		      (prep for)
+		      (noun-phrase
+		       (simple-noun-phrase (article the) (noun professor))
+		       (prep-phrase
+			(prep to)
+			(noun-phrase
+			 (simple-noun-phrase (article a) (noun student))
+			 (prep-phrase
+			  (prep to)
+			  (noun-phrase
+			   (noun-phrase
+			    (noun-phrase
+			     (simple-noun-phrase (article the) (noun student))
+			     (prep-phrase
+			      (prep to)
+			      (simple-noun-phrase (article a) (noun student))))
+			    (prep-phrase
+			     (prep to)
+			     (noun-phrase
+			      (simple-noun-phrase (article a) (noun student))
+			      (prep-phrase
+			       (prep to)
+			       (noun-phrase
+				(noun-phrase
+				 (noun-phrase
+				  (noun-phrase
+				   (simple-noun-phrase (article a)
+						       (noun student))
+				   (prep-phrase
+				    (prep for)
+				    (simple-noun-phrase (article the)
+							(noun student))))
+				  (prep-phrase
+				   (prep to)
+				   (simple-noun-phrase (article a)
+						       (noun class))))
+				 (prep-phrase
+				  (prep for)
+				  (noun-phrase
+				   (noun-phrase
+				    (simple-noun-phrase (article the)
+							(noun class))
+				    (prep-phrase
+				     (prep for)
+				     (simple-noun-phrase (article the)
+							 (noun class))))
+				   (prep-phrase
+				    (prep in)
+				    (noun-phrase
+				     (noun-phrase
+				      (simple-noun-phrase (article a)
+							  (noun professor))
+				      (prep-phrase
+				       (prep to)
+				       (noun-phrase
+					(simple-noun-phrase (article a)
+							    (noun student))
+					(prep-phrase
+					 (prep for)
+					 (simple-noun-phrase
+					  (article the)
+					  (noun student))))))
+				     (prep-phrase
+				      (prep by)
+				      (simple-noun-phrase (article a)
+							  (noun class))))))))
+				(prep-phrase
+				 (prep in)
+				 (noun-phrase
+				  (simple-noun-phrase (article the)
+						      (noun professor))
+				  (prep-phrase
+				   (prep to)
+				   (noun-phrase
+				    (simple-noun-phrase (article the)
+							(noun professor))
+				    (prep-phrase
+				     (prep for)
+				     (simple-noun-phrase
+				      (article the)
+				      (noun student))))))))))))
+			   (prep-phrase
+			    (prep with)
+			    (noun-phrase
+			     (noun-phrase
+			      (simple-noun-phrase (article a) (noun student))
+			      (prep-phrase
+			       (prep by)
+			       (simple-noun-phrase (article a)
+						   (noun student))))
+			     (prep-phrase
+			      (prep for)
+			      (noun-phrase
+			       (simple-noun-phrase (article the) (noun class))
+			       (prep-phrase
+				(prep to)
+				(simple-noun-phrase
+				 (article the)
+				 (noun professor))))))))))))))))))
+		(prep-phrase
+		 (prep to)
+		 (noun-phrase
+		  (noun-phrase
+		   (noun-phrase
+		    (noun-phrase
+		     (simple-noun-phrase (article a) (noun student))
+		     (prep-phrase
+		      (prep for)
+		      (simple-noun-phrase (article a) (noun class))))
+		    (prep-phrase
+		     (prep for)
+		     (noun-phrase
+		      (simple-noun-phrase (article the) (noun student))
+		      (prep-phrase
+		       (prep for)
+		       (simple-noun-phrase (article the) (noun student))))))
+		   (prep-phrase
+		    (prep to)
+		    (noun-phrase
+		     (noun-phrase
+		      (noun-phrase
+		       (noun-phrase
+			(simple-noun-phrase (article the) (noun student))
+			(prep-phrase
+			 (prep for)
+			 (noun-phrase
+			  (noun-phrase
+			   (noun-phrase
+			    (simple-noun-phrase (article a) (noun student))
+			    (prep-phrase
+			     (prep for)
+			     (simple-noun-phrase (article the)
+						 (noun student))))
+			   (prep-phrase
+			    (prep to)
+			    (noun-phrase
+			     (noun-phrase
+			      (simple-noun-phrase (article the)
+						  (noun professor))
+			      (prep-phrase
+			       (prep for)
+			       (noun-phrase
+				(simple-noun-phrase (article a) (noun student))
+				(prep-phrase
+				 (prep by)
+				 (noun-phrase
+				  (simple-noun-phrase (article a)
+						      (noun student))
+				  (prep-phrase
+				   (prep in)
+				   (noun-phrase
+				    (noun-phrase
+				     (simple-noun-phrase (article a)
+							 (noun student))
+				     (prep-phrase
+				      (prep to)
+				      (noun-phrase
+				       (simple-noun-phrase (article the)
+							   (noun student))
+				       (prep-phrase
+					(prep for)
+					(simple-noun-phrase
+					 (article a)
+					 (noun professor))))))
+				    (prep-phrase
+				     (prep to)
+				     (simple-noun-phrase (article a)
+							 (noun cat))))))))))
+			     (prep-phrase
+			      (prep for)
+			      (noun-phrase
+			       (simple-noun-phrase (article a)
+						   (noun professor))
+			       (prep-phrase
+				(prep for)
+				(simple-noun-phrase (article the)
+						    (noun student))))))))
+			  (prep-phrase
+			   (prep for)
+			   (noun-phrase
+			    (noun-phrase
+			     (simple-noun-phrase (article a) (noun cat))
+			     (prep-phrase
+			      (prep for)
+			      (simple-noun-phrase (article the)
+						  (noun professor))))
+			    (prep-phrase
+			     (prep by)
+			     (simple-noun-phrase (article a)
+						 (noun professor))))))))
+		       (prep-phrase
+			(prep for)
+			(noun-phrase
+			 (simple-noun-phrase (article the) (noun cat))
+			 (prep-phrase
+			  (prep for)
+			  (noun-phrase
+			   (simple-noun-phrase (article a) (noun professor))
+			   (prep-phrase
+			    (prep with)
+			    (simple-noun-phrase (article the) (noun cat))))))))
+		      (prep-phrase
+		       (prep in)
+		       (noun-phrase
+			(simple-noun-phrase (article the) (noun professor))
+			(prep-phrase
+			 (prep for)
+			 (simple-noun-phrase (article a) (noun cat))))))
+		     (prep-phrase
+		      (prep for)
+		      (simple-noun-phrase (article the) (noun student))))))
+		  (prep-phrase
+		   (prep in)
+		   (noun-phrase
+		    (simple-noun-phrase (article the) (noun class))
+		    (prep-phrase
+		     (prep for)
+		     (simple-noun-phrase (article the) (noun professor))))))))
+	       (prep-phrase
+		(prep to)
+		(noun-phrase
+		 (simple-noun-phrase (article a) (noun student))
+		 (prep-phrase
+		  (prep for)
+		  (simple-noun-phrase (article the) (noun student))))))))))))
+	(prep-phrase
+	 (prep with)
+	 (simple-noun-phrase (article a) (noun student))))))
+     (prep-phrase
+      (prep for)
+      (noun-phrase
+       (simple-noun-phrase (article the) (noun professor))
+       (prep-phrase
+	(prep in)
+	(noun-phrase
+	 (simple-noun-phrase (article the) (noun class))
+	 (prep-phrase
+	  (prep to)
+	  (simple-noun-phrase (article a) (noun student))))))))))
+  (prep-phrase
+   (prep to)
+   (noun-phrase
+    (noun-phrase
+     (simple-noun-phrase (article the) (noun cat))
+     (prep-phrase
+      (prep for)
+      (noun-phrase
+       (noun-phrase
+	(simple-noun-phrase (article the) (noun student))
+	(prep-phrase
+	 (prep for)
+	 (simple-noun-phrase (article the) (noun professor))))
+       (prep-phrase
+	(prep for)
+	(simple-noun-phrase (article a) (noun student))))))
+    (prep-phrase
+     (prep in)
+     (simple-noun-phrase (article a) (noun student)))))))
+
+We can improve on this by making the addition of a prepositional
+phrase less likely.  For example, we could rewrite PARSE-NOUN-PHRASE
+and PARSE-VERB-PHRASE this way:
+
+(define (parse-noun-phrase)
+  (define (maybe-extend noun-phrase)
+    (ramb noun-phrase
+	  noun-phrase
+	  noun-phrase
+	  noun-phrase
+	  noun-phrase
+         (maybe-extend (list 'noun-phrase
+                             noun-phrase
+                             (parse-prepositional-phrase)))))
+  (maybe-extend (parse-simple-noun-phrase)))
+
+(define (parse-verb-phrase)
+  (define (maybe-extend verb-phrase)
+    (ramb verb-phrase
+	  verb-phrase
+	  verb-phrase
+	  verb-phrase
+	  verb-phrase
+         (maybe-extend (list 'verb-phrase
+                             verb-phrase
+                             (parse-prepositional-phrase)))))
+  (maybe-extend (parse-word verbs)))
+
+With these changes, here are the first few sentences I get:
+
+(sentence (simple-noun-phrase (article a) (noun professor)) (verb sleeps))
+
+(sentence (simple-noun-phrase (article a) (noun professor)) (verb sleeps))
+
+(sentence (simple-noun-phrase (article a) (noun professor))
+	  (verb-phrase
+	   (verb sleeps)
+	   (prep-phrase (prep for)
+			(simple-noun-phrase (article a) (noun student)))))
+
+(sentence
+ (simple-noun-phrase (article a) (noun professor))
+ (verb-phrase (verb sleeps)
+	      (prep-phrase (prep for)
+			   (simple-noun-phrase (article a) (noun student)))))
+
+This is still not quite what we want, but with more fine tuning we can
+probably get to a reasonable sentence generator.
+
+
+4.52  if-fail
+
+To add a new special form we add a clause to ANALYZE, which should call
+this new procedure:
+
+(define (analyze-if-fail exp)
+  (let ((trial (analyze (if-fail-trial exp)))
+	(failure (analyze (if-fail-failure exp))))
+    (lambda (env succeed fail)
+      (trial env
+	     succeed
+	     (lambda () (failure env succeed fail))))))
+
+(define if-fail-trial cadr)
+(define if-fail-failure caddr)
+
+Here's a version to go with vambeval, the ambeval without analysis:
+
+(define (eval-if-fail exp env succeed fail)
+  (vambeval (if-fail-trial exp)
+	    env
+	    succeed
+	    (lambda () (vambeval (if-fail-failure exp)
+				 env
+				 succeed
+				 fail))))
+
+
+Extra for Experts
+=================
+
+4.31
+
+Despite what the exercise says, there's no need to change the procedures that
+determine the DEFINE syntax, because it doesn't check that the formal
+parameters are symbols.  Even MAKE-PROCEDURE doesn't check.
+
+The hard part is in procedure invocation.  The original metacircular evaluator
+has this in the big COND in EVAL:
+
+	((application? exp)
+	 (mc-apply (MC-EVAL (operator exp) env)
+		   (LIST-OF-VALUES (operands exp) env)))
+
+The lazy evaluator in the book changes that to
+
+        ((application? exp)
+         (mc-apply (ACTUAL-VALUE (operator exp) env)
+		   (operands exp)	; no LIST-OF-VALUES
+		   ENV))		; added argument
+
+(For this exercise, it's easier to work with the book's version than with
+the slightly different alternative shown in the lecture notes.)
+
+So now we're giving APPLY expressions rather than values, and we're also
+giving APPLY an environment in which to evaluate or thunkify the values.
+We don't have to make any change to the book's EVAL; the hard part is in
+APPLY, in which we have to decide whether to evaluate or thunkify.
+
+Here's the book's lazy APPLY:
+
+(define (mc-apply procedure arguments env)
+  (cond ((primitive-procedure? procedure)
+         (apply-primitive-procedure
+          procedure
+          (LIST-OF-ARG-VALUES ARGUMENTS ENV)))	; ***
+        ((compound-procedure? procedure)
+         (eval-sequence
+          (procedure-body procedure)
+          (extend-environment
+           (procedure-parameters procedure)
+           (LIST-OF-DELAYED-ARGS ARGUMENTS ENV) ; ***
+           (procedure-environment procedure))))
+        (else
+         (error
+          "Unknown procedure type -- APPLY" procedure))))
+
+The two commented lines handle evaluation, for primitive procedures, and
+thunking, for non-primitive procedures.  It's the latter we have to change;
+the args may be evaluated, thunked with memoization, or thunked without
+memoization.  To make this decision, we have to look at the formal parameters
+of the procedure we're calling.  So the second commented line above will
+change to
+
+           (PROCESS-ARGS arguments (PROCEDURE-PARAMETERS PROCEDURE) env)
+
+Two things have changed; we're calling a not-yet-written procedure
+PROCESS-ARGS instead of LIST-OF-DELAYED-ARGS, and we're giving that procedure
+the formal parameters as well as the actual argument expressions.
+
+One more thing has to change in APPLY:  Since the list returned by
+PROCEDURE-PARAMETERS is no longer a list of symbols, but can now include
+sublists such as (B LAZY), we have to extract the real formal parameter
+names from it.  So the final version of APPLY is this:
+
+(define (mc-apply procedure arguments env)
+  (cond ((primitive-procedure? procedure)
+         (apply-primitive-procedure
+          procedure
+          (list-of-arg-values arguments env)))
+        ((compound-procedure? procedure)
+         (eval-sequence
+          (procedure-body procedure)
+          (extend-environment
+           (EXTRACT-NAMES (procedure-parameters procedure))		 ; ***
+           (PROCESS-ARGS arguments (PROCEDURE-PARAMETERS PROCEDURE) env) ; ***
+           (procedure-environment procedure))))
+        (else
+         (error
+          "Unknown procedure type -- APPLY" procedure))))
+
+Now comes the actual work, in EXTRACT-NAMES and in PROCESS-ARGS.
+
+EXTRACT-NAMES takes as its argument a list such as
+	(A (B LAZY) C (D LAZY-MEMO))
+and returns a list with just the variable names:
+	(A B C D)
+
+(define (extract-names formals)
+  (cond ((null? formals) '())
+	((pair? (car formals))	; CAR is (VAR TYPE), so keep CAAR in result
+	 (cons (caar formals) (extract-names (cdr formals))))
+	(else (cons (car formals) (extract-names (cdr formals))))))
+
+PROCESS-ARGS takes an argument list, let's say
+	((+ 2 3) (- 4 5) (* 6 7) (/ 8 9))
+and a parameter list, such as
+	(A (B LAZY) C (D LAZY-MEMO))
+and matches them up.  It pays no attention to the variable names in the
+parameter list; it's only looking for LAZY or LAZY-MEMO type tags.  It returns
+a list of argument values-and-thunks:
+	(5 (THUNK-NOMEMO (- 4 5) <env>) 42 (THUNK-MEMO (/ 8 9) <env>))
+where <env> represents an actual environment, not the word ENV.  The argument
+expressions (+ 2 3) and (* 6 7) correspond to non-lazy parameters A and C,
+so they've been evaluated; the other arguments have been turned into thunks
+by combining them with a type-tag (THUNK-NOMEMO or THUNK-MEMO as appropriate)
+and an environment.  Instead of the book's DELAY-IT procedure we have to use
+two different procedures, DELAY-NOMEMO and DELAY-MEMO, to construct the thunks.
+
+(define (process-args args formals env)
+  (cond ((null? args) '())
+	((null? formals)
+	 (error "Too many arguments"))
+	((pair? (car formals))
+	 (cond ((eq? (cadar formals) 'lazy)
+		(cons (delay-nomemo (car args) env)
+		      (process-args (cdr args) (cdr formals) env)))
+	       ((eq? (cadar formals) 'lazy-memo)
+		(cons (delay-memo (car args) env)
+		      (process-args (cdr args) (cdr formals) env)))
+	       (else (error "Unrecognized parameter type" (cadar formals)))))
+	(else (cons (EVAL (car args))
+		    (process-args (cdr args) (cdr formals) env)))))
+
+Note the call to EVAL in capital letters two lines up.  Should that be EVAL
+or ACTUAL-VALUE?  The issue is what behavior we want when a procedure with a
+non-lazy parameter is called with a thunk (created by calling some other
+non-primitive procedure) as the argument:
+
+	(define (foo x)
+	  x)
+
+	(define (baz (lazy x))
+	  x)
+
+	(define p (foo (baz (/ 1 0))))
+
+What should happen?  FOO's argument is non-lazy, so we evaluate the argument
+expression (BAZ (/ 1 0)).  BAZ's argument is lazy, so we make a thunk that
+promises to compute (/ 1 0) later, and that becomes the argument to FOO.
+If we use EVAL up there, as written, then FOO will get a thunk as its
+argument, and will return the thunk, which will become the value of P.  If
+we make it ACTUAL-VALUE, then the thunk will be forced, and we'll get an
+error dividing by zero, and P won't get a value.
+
+I think the procedure FOO probably doesn't care whether or not its argument is
+a thunk, and therefore the argument shouldn't be forced.  If the return value
+from FOO is used in some context where a real value is needed (for example,
+if we said
+	(foo (baz (/ 1 0)))
+at the Scheme prompt instead of inside a DEFINE, then the value will be
+forced.)  But you'd like to be able to write something like
+
+	(define (cadr seq) (car (cdr seq)))
+
+and if this is applied to a list of thunks, the result should be a
+thunk, not the value promised by the thunk.
+
+Perhaps there should be a third parameter type tag, so you could say
+
+	(define (f a (b lazy) c (d lazy-memo) (e forced))
+	  ...)
+
+allowing the user to choose between EVAL and ACTUAL-VALUE here.  This would
+add a COND clause in APPLY:
+
+	       ((eq? (cadar formals) 'forced)
+		(cons (actual-value (car args) env)
+		      (process-args (cdr args) (cdr formals) env)))
+
+
+Now we have to do a little data abstraction:
+
+(define (delay-nomemo exp env)
+  (list 'THUNK-NOMEMO exp env))
+
+(define (delay-memo exp env)
+  (list 'THUNK-MEMO exp env))
+
+Note that the thunk constructors don't have to do any real memoization or
+non-memoization work; they just construct thunks that "know" which kind they
+are.  It's when the thunks are forced that we have to take the difference
+into account:
+
+(define (force-it obj)
+  (cond ((THUNK-MEMO? obj)		; two kinds of thunk testers
+         (let ((result (actual-value
+                        (thunk-exp obj)
+                        (thunk-env obj))))
+           (set-car! obj 'evaluated-thunk)
+           (set-car! (cdr obj) result)  ; replace exp with its value
+           (set-cdr! (cdr obj) '())     ; for memoized thunk
+           result))
+	((THUNK-NOMEMO? OBJ)	; nomemo thunk is EVALed each time it's forced
+	 (ACTUAL-VALUE (THUNK-EXP OBJ) (THUNK-ENV OBJ)))
+        ((evaluated-thunk? obj)
+         (thunk-value obj))
+        (else obj)))
+
+(define (thunk-memo? exp)
+  (tagged-list? exp 'thunk-memo))
+
+(define (thunk-nomemo? exp)
+  (tagged-list exp 'thunk-nomemo))
+
+Note that for both kinds of thunks we call ACTUAL-VALUE to cash in the promise;
+the difference is that for a memoized thunk we remember the result, whereas for
+a non-memoized thunk we don't.
+
+
+
+Handle-infix:  See proj4b solutions.

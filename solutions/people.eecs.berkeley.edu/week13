@@ -1,0 +1,694 @@
+Week 13 solutions
+
+LAB
+===
+
+1.  The result of (delay ...) is of type *promise*.
+    The result of (force (delay ...)) is of whatever type the "..." would
+be without delay; in this case it's (force (delay (+ 1 27))) and that's of
+type integer.
+
+
+2.  (stream-cdr (stream-cdr (cons-stream 1 '(2 3)))) causes an error because
+(2 3) isn't a stream.
+
+	(stream-cdr (cons-stream 1 '(2 3)))       -->   (2 3)
+        (stream-cdr '(2 3))                       -->   (force (cdr '(2 3)))
+                                            	  -->   (force '(3))
+but (3) isn't a promise!
+
+
+3.  (delay (enumerate-interval 1 3))  returns a promise.
+    (stream-enumerate-interval 1 3)  returns a stream, i.e., a pair whose car
+is 1 and whose cdr is a promise.
+
+The only thing you can do with the result of (delay ...) is FORCE it; you
+can't ask for its stream-car or stream-cdr, etc.  By contrast, with the
+stream, you can stream-car or stream-cdr it, but *not* force it, because
+it's not a promise.
+
+
+4.  the 4-2-1 stream.
+
+(define (next-num n)
+  (if (even? n)
+      (/ n 2)
+      (+ (* n 3) 1)))
+
+(define (num-seq n)
+  (cons-stream n (num-seq (next-num n))))
+
+(define (seq-length s)
+  (if (= (stream-car s) 1)
+      1
+      (+ 1 (seq-length (stream-cdr s)))))
+
+
+
+HOMEWORK
+========
+3.50 stream-map
+
+(define (stream-map proc . argstreams)
+  (if (STREAM-NULL? (car argstreams))
+      the-empty-stream
+      (CONS-STREAM
+       (apply proc (map STREAM-CAR argstreams))
+       (apply stream-map
+	      (cons proc (map STREAM-CDR argstreams))))))
+
+3.51  stream-ref
+
+> (stream-ref x 5)
+
+1 
+2 
+3 
+4 
+5 
+5
+
+> (stream-ref x 7)
+
+6 
+7 
+7
+
+> 
+
+The repeated last number in each case is the actual value returned by
+stream-ref; the other numbers are printed by show.  The only numbers
+shown are the ones we haven't already computed.  If we ask for a value
+nearer the front of the stream, nothing is SHOWn at all:
+
+> (stream-ref x 4)
+
+4
+
+> 
+
+Notice that the first element of the stream is zero, not one -- why
+isn't the zero printed?  Answer:  It was printed when you defined X
+in the first place.
+
+NOTE:  The important thing to take away from this example is that if
+DELAY didn't involve memoization, the printed results would be quite
+different.  All the numbers would be printed every time.
+
+
+3.52 accum/filter
+
+To make the situation more visible, I've chosen to define accum to use
+show (as above), so we can see intermediate results:
+
+> (define sum 0)
+SUM
+
+> (define (accum x)
+    (set! sum (+ (show x) sum))
+    sum)
+ACCUM
+
+> (define seq (stream-map accum (stream-enumerate-interval 1 20)))
+1 
+SEQ
+
+;; map applies the function argument to the stream-car of the stream only.
+
+> sum
+1
+
+> (define y (stream-filter even? seq))
+2 
+3 
+Y
+
+;; filter keeps forcing stream elements until it finds an even sum, 1+2+3.
+
+> sum
+6
+
+> (define z (stream-filter (lambda (x) (= (remainder x 5) 0)) seq))
+4 
+Z
+
+;; 1+2+3+4 is divisible by 5.
+
+> (stream-ref y 7)
+
+5 
+6 
+7 
+8 
+9 
+10 
+11 
+12 
+13 
+14 
+15 
+16 
+136
+
+;; even sums are 6, 10, 28, 36, 66, 78, 120, 136 (1+...+16).
+;; (Notice how they come in pairs, by the way.  Two odd sums, then two even.)
+
+> sum
+136
+
+> (print-stream z)
+{10 15 45 55 105 120
+17 
+18 
+19  190
+20  210}
+
+;; This may look confusing.  Had I not used show, print-stream would have
+;; printed {10 15 45 55 105 120 190 210}.  This is the entire stream z.
+;; The numbers 17 to 20 were printed by show as the stream seq was forced.
+
+> sum
+210
+
+> 
+
+Had we not used the memoizing version of delay, the computation of z would
+have forced the stream seq over again, from the beginning.  Not only would
+accum have shown the results 1, 3, 6, 10, etc. over again, it would have
+gotten the wrong answers!  Since it uses the global variable sum, it only
+works if each term is added to the sum only once.
+
+
+3.53 implicit definition
+Try it yourself!
+
+We know the first element of S is 1 and the STREAM-CDR is the result
+of adding S and S, so we get:
+
+  1 ...
++ 1 ...
+--------
+  2 ...
+
+So the second element must be 2.  That means we have:
+
+  1 2 ...
++ 1 2 ...
+----------
+  2 4 ...
+
+So the third element is 4, and so on.
+
+
+3.54 factorials
+
+(define (mul-streams s1 s2)
+  (stream-map * s1 s2))
+
+
+(define factorials (cons-stream 1 (mul-streams FACTORIALS INTEGERS)))
+
+will give you the stream {1 1 2 6 24 ...} starting with zero factorial, or
+
+(define factorials (cons-stream 1 (mul-streams FACTORIALS
+					       (STREAM-CDR INTEGERS))))
+
+will give the stream {1 2 6 24 ...} starting with one factorial.
+
+
+
+3.55 partial sums
+
+(define (partial-sums s)
+  (define result (cons-stream (stream-car s)
+			      (add-streams (stream-cdr s) result)))
+  result)
+
+
+Alternatively, it can be done explicitly:
+
+(define (partial-sums s)
+  (define (helper s sofar)
+    (cons-stream sofar (helper (stream-cdr s) (+ sofar (stream-car s)))))
+  (helper (stream-cdr s) (stream-car s)))
+
+but the first version is way cooler.
+
+
+3.56  merge and Hamming's problem
+
+This is easy:
+
+> (define S (cons-stream 1 (merge (scale-stream S 2)
+				  (merge (scale-stream S 3)
+					 (scale-stream S 5)))))
+
+S
+
+> (show-stream S 41)
+(1 2 3 4 5 6 8 9 10 12 15 16 18 20 24 25 27 30 32 36 40 45 48 50 54 60 64 72
+ 75 80 81 90 96 100 108 120 125 128 135 144 150 ...)
+
+
+3.64 stream-limit
+
+(define (stream-limit s tolerance)
+  (if (< (abs (- (stream-car s)
+		 (stream-car (stream-cdr s))))
+	 tolerance)
+      (stream-car (stream-cdr s))
+      (stream-limit (stream-cdr s) tolerance)))
+
+3.66 examine the pairs of integers
+
+One thing to try is to look at each half of the pairs separately.
+
+> (ss (stream-map car p) 100)
+(1 1 2 1 2 1 3 1 2 1 3 1 2 1 4 1 2 1 3 1 2 1 4 1 2 1 3 1 2 1 5 1 2 1 3 1 2
+ 1 4 1 2 1 3 1 2 1 5 1 2 1 3 1 2 1 4 1 2 1 3 1 2 1 6 1 2 1 3 1 2 1 4 1 2 1
+ 3 1 2 1 5 1 2 1 3 1 2 1 4 1 2 1 3 1 2 1 6 1 2 1 3 1 ...)
+
+Every other element is 1.  Leaving those out, we get
+
+1 2 2 3 2 3 2 4 2 3 2 4 2 3 2 5 2 3 2 4 ...
+
+Except right at the beginning, every other element is 2.  Leaving those
+out we are left with
+
+2 3 3 4 3 4 3 5 3 4 ...
+
+Looks like every other element is 3... sounds like a pattern!
+
+> (ss (stream-map cadr p) 100)
+(1 2 2 3 3 4 3 5 4 6 4 7 5 8 4 9 6 10 5 11 7 12 5 13 8 14 6 15 9 16 5 17 10
+ 18 7 19 11 20 6 21 12 22 8 23 13 24 6 25 14 26 9 27 15 28 7 29 16 30 10 31
+ 17 32 6 33 18 34 11 35 19 36 8 37 20 38 12 39 21 40 7 41 22 42 13 43 23 44
+ 9 45 24 46 14 47 25 48 7 49 26 50 15 51 ...)
+
+The even-numbered elements are
+
+2 3 4 5 6 7 8 9 10 11 12 ...
+
+The odd-numbered ones are
+
+1 2 3 3 4 4 5 4 6 5 7 5 8 6 ...
+
+What can you make of those?
+
+
+3.68 Louis
+
+INTERLEAVE is an ordinary Scheme procedure, so its arguments must
+be computed before INTERLEAVE is called.  One of those arguments
+is a recursive call to PAIRS.  This will be an infinite loop.
+The book's version works because it uses CONS-STREAM, which
+doesn't evaluate its second argument until later, if ever.
+
+
+--------------------
+
+2.  fract-stream problem
+
+(define (fract-stream fraction)
+  (cons-stream (quotient (* (car fraction) 10) (cadr fraction))
+               (fract-stream (list (remainder (* (car fraction) 10)
+					      (cadr fraction))
+				   (cadr fraction)))))
+
+(define (approximation str num)
+  (if (= num 0)
+      '()
+      (cons (stream-car str) (approximation (stream-cdr str) (- num 1))) ))
+
+
+
+Extra for Experts
+=================
+
+1.  Book exercises.
+
+
+3.59
+
+(a)
+
+(define (integrate-series s)
+  (stream-map / s integers))
+
+(b)
+
+(define cosine-series
+  (cons-stream 1 (integrate-series (stream-map - sine-series))))
+
+(define sine-series
+  (cons-stream 0 (integrate-series cosine-series)))
+
+We can check our work two ways.  One is by comparing the results with the
+explicit definitions given for the sin and cos series in the exercise:
+
+STk> (ss sine-series)
+(0 1 0 -0.166666666666667 0 0.00833333333333333 0 -0.000198412698412698
+ 0 2.75573192239859e-06 ...)
+
+STk> (ss (stream-map (lambda (n)
+		       (cond ((= (remainder n 2) 0) 0)
+			     ((= (remainder n 4) 3)
+			      (/ -1 (factorial n)))
+			     (else (/ 1 (factorial n)))))
+		     (cons-stream 0 integers)))
+(0 1 0 -0.166666666666667 0 0.00833333333333333 0 -0.000198412698412698
+ 0 2.75573192239859e-06 ...)
+
+STk> (ss cosine-series)
+(1 0 -0.5 0 0.0416666666666667 0 -0.00138888888888889 0 2.48015873015873e-05 0 ...)
+
+STk> (ss (stream-map (lambda (n)
+		       (cond ((= (remainder n 2) 1) 0)
+			     ((= (remainder n 4) 2)
+			      (/ -1 (factorial n)))
+			     (else (/ 1 (factorial n)))))
+		     (cons-stream 0 integers)))
+(1 0 -0.5 0 0.0416666666666667 0 -0.00138888888888889 0 2.48015873015873e-05 0 ...)
+
+For a second check, we can actually evaluate an approximation to the value of
+a series.  (This goes beyond what the problem asked you to do!)
+
+(define (approximate-value s x terms)
+  (define x-stream (cons-stream x x-stream))
+  (if (= terms 0)
+      0
+      (+ (stream-car s)
+	 (approximate-value (stream-map * (stream-cdr s) x-stream)
+			    x
+			    (- terms 1)))))
+
+STk> (sin 3)
+0.141120008059867
+STk> (approximate-value sine-series 3 30)
+0.141120008059867
+
+STk> (sin -2)
+-0.909297426825682
+STk> (approximate-value sine-series -2 30)
+-0.909297426825682
+
+Infinite series have a limited domain of convergence.  Luckily for sin and cos
+there's no reason to give a value of X with magnitude larger than pi.
+
+
+3.60
+
+Suppose we have two series
+
+	A = a0 + a1 * x^1 + a2 * x^2 + ...
+	B = b0 + b1 * x^1 + b2 * x^2 + ...
+
+Multiply them by multiplying every term of A times every term of B, collecting
+the results according to the resulting power of X:
+
+	AB = (a0b0) + (a0b1+a1b0) * x^1 + (a0b2+a1b1+a2b0) * x^2 
+		    + (a0b3+a1b2+a2b1+a3b0) * x^3 + ...
+
+(In the above, "a0b0" means a0 * b0, written more compactly so the big picture
+is easier to see.)
+
+The term for x^n is a sum of n+1 products of ai*bj where i+j=n.
+
+We are told to express this in the form
+	(cons-stream _____ (add-streams _____ _____))
+
+It's clear what goes in the first blank: a0b0, the constant term in AB.
+The rest of the problem takes some cleverness; one key observation is that
+each term of AB includes the product a0bi.  These products, taken together,
+are (scale-stream b a0).  But we can't quite say that because we used up a0b0
+in the first blank.  So...
+
+(define (mul-series s1 s2)
+  (cons-stream (* (stream-car s1) (stream-car s2))
+	       (add-streams (scale-stream (stream-cdr s2) (stream-car s1))
+			    (mul-series (stream-cdr s1) s2))))
+
+STk> (ss (add-streams (mul-series sine-series sine-series)
+                      (mul-series cosine-series cosine-series)))
+(1 0 0.0 0.0 5.55111512312578e-17 0.0 -6.93889390390723e-18 0.0 0.0 0.0 ...)
+
+The result we wanted was (1 0 0 0 0 0 0 0 0 0 ...).  We didn't quite get that
+because of arithmetic roundoff errors, but the few nonzero terms are quite
+small, except for the expected 1 as the constant term.
+
+
+3.61
+
+(define (invert-unit-series s)
+  (define x (cons-stream 1 (stream-map - (mul-series (stream-cdr s) x))))
+  x)
+
+STk> (ss cosine-series)
+(1 0 -0.5 0 0.0416666666666667 0 -0.00138888888888889 0 2.48015873015873e-05 0 ...)
+STk> (ss (invert-unit-series cosine-series))
+(1 0 0.5 0.0 0.208333333333333 0.0 0.0847222222222222 0.0 0.0343501984126984 0.0 ...)
+STk> (ss (invert-unit-series (invert-unit-series cosine-series)))
+(1 0 -0.5 0.0 0.0416666666666667 0.0 -0.00138888888888888 0.0 2.48015873015855e-05
+ 0.0 ...)
+
+
+3.62
+
+Since invert-unit-series only works for series with constant term 1, if the
+denominator starts with anything else we have to scale it by 1/const, so we have
+an appropriate argument.  Since we made the stream smaller (if const > 1), the
+reciprocal of the scaled denominator will be *larger* than the reciprocal of
+the original stream, so we have to scale it again by 1/const.
+
+(define (div-series s1 s2)
+  (if (= (stream-car s2) 0)
+      (error "Can't divide by zero-constant-term series")
+      (mul-series s1
+		  (scale-stream (invert-unit-series
+				 (scale-stream s2 (stream-car s2)))
+				(stream-car s2)))))
+
+(define tangent-series (div-series sine-series cosine-series))
+
+STk> (ss tangent-series)
+(0 1 0.0 0.333333333333333 0.0 0.133333333333333 0.0 0.053968253968254
+ 0.0 0.0218694885361552 ...)
+STk> (approximate-value tangent-series (/ pi 4) 30)
+0.999999999209469
+STk> (approximate-value tangent-series (/ pi 4) 200)
+1.0
+
+
+2.  Hanoi-stream.
+
+This was a final exam problem in fall 97 (but only worth 2 points and marked as
+harder than the others).  Here are the solutions as posted from that exam:
+
+
+The most obvious approach is to try to generalize from the finite case.
+You can't, of course, say (HANOI-STREAM INFINITY).  Instead of recursion
+to smaller streams, as in HANOI-STREAM, you have to start with a small
+example and try to make it bigger in each recursion.  The goal is something
+like this:
+
+(make-bigger () 1)  -->
+(make-bigger (1) 2)  -->
+(make-bigger (1 2 1) 3)  -->
+(make-bigger (1 2 1 3 1 2 1) 4)  --> etc.
+
+Here's the attempted code:
+
+(define (make-bigger stream num)
+  (make-bigger (stream-append stream (cons-stream num stream))
+	       (+ num 1)))
+
+(define hanoi (make-bigger the-empty-stream 1))		; wrong!
+
+But of course this won't work.  The recursion in MAKE-BIGGER isn't
+delayed (by happening in the second argument to a CONS-STREAM) so
+the program really does loop forever with no result.
+
+
+There were five general categories of solution to this problem.
+
+First category (three correct solutions):
+
+We know how to make finite Hanoi streams.  The problem points out
+that the infinite Hanoi stream has any particular finite Hanoi
+stream as a leading substring.  So for example, the infinite stream
+
+(1 2 1 3 1 2 1 4 1 2 1 3 1 2 1 5 1 2 1 3 1 2 1 4 1 2 1 3 1 2 1 6 1 2 1 ...)
+
+starts with
+
+(1 2 1 3 1 2 1)
+
+which is (hanoi-stream 3).  So, the Nth element of the infinite
+Hanoi stream is also the Nth element of any finite Hanoi stream
+whose length is at least N.  The simplest such finite stream to
+choose is (hanoi-stream N), whose length is always at least N.
+So...
+
+(define (nth-hanoi-element n)
+  (stream-nth n (hanoi-stream n)))
+
+(define (stream-nth n stream)
+  (if (= n 1)
+      (stream-car stream)
+      (stream-nth (- n 1) (stream-cdr stream))))
+
+(define hanoi (stream-map nth-hanoi-element integers))
+
+
+Second category (four correct solutions):
+
+The idea of computing a function that finds the Nth number in the
+stream, and mapping that function over the integers, is nice and
+simple.  But the NTH-HANOI-ELEMENT above takes time Theta(2^N) for
+each element.  By choosing a smaller argument to HANOI-STREAM, we
+can get that down to Theta(N), but why can't we calculate the
+Nth number directly, instead of building a stream each time?
+
+If N is odd, (HANOI-NUMBER N) should be 1.
+If N is divisible by 2 but not by 4, (HANOI-NUMBER N) must be 2.
+If N is divisible by 4 but not by 8, the number is 3.
+And so on...  We must find the largest power of 2 that's a factor
+of N.
+
+(define (hanoi-number n)
+  (if (odd? n)
+      1
+      (+ 1 (hanoi-number (/ n 2)))))
+
+(define hanoi (stream-map hanoi-number integers))
+
+
+Third category (three correct solutions):
+
+One way to characterize the infinite Hanoi stream is that it's
+
+    (stream-append (hanoi-stream 3) (everything-starting-with-4))
+
+(1 2 1 3 1 2 1 4 1 2 1 3 1 2 1 5 1 2 1 3 1 2 1 4 1 2 1 3 1 2 1 6 1 2 1 ...)
+(1 2 1 3 1 2 1) (4 1 2 1 3 1 2 1 5 1 2 1 3 1 2 1 4 1 2 1 3 1 2 1 6 1 2 1 ...)
+
+Since the first argument to stream-append is finite, this is a reasonable
+thing to try to compute.  The second argument has a funny asymmetrical
+shape, though.  (Remember that there's more than one 4 in the infinite
+stream, but we're singling out the first one as special.)  What's in that
+right part?  It's
+
+	* The number 4
+	* then another copy of (hanoi-stream 3)
+	* and then (everything-starting-with-5).
+
+(4 1 2 1 3 1 2 1 5 1 2 1 3 1 2 1 4 1 2 1 3 1 2 1 6 1 2 1 ...)
+4 (1 2 1 3 1 2 1) (5 1 2 1 3 1 2 1 4 1 2 1 3 1 2 1 6 1 2 1 ...)
+
+Clearly instead of picking a specific number such as 4, we need a general
+function for the right part starting with any number.
+
+(define (right-part n)
+  (cons-stream n
+	       (stream-append (hanoi-stream (- n 1))
+			      (right-part (+ n 1)))))
+
+In particular, if we take n=1, the left part is empty, so we can
+forget about it:
+
+(define hanoi (right-part 1))
+
+
+Fourth category (two correct solutions):
+
+Let's look at the infinite Hanoi stream again.
+
+(1 2 1 3 1 2 1 4 1 2 1 3 1 2 1 5 1 2 1 3 1 2 1 4 1 2 1 3 1 2 1 6 1 2 1 ...)
+
+Every other number is 1, so let's think about interleaving ONES with
+something:
+
+(1   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1 ...)
+(  2   3   2   4   2   3   2   5   2   3   2   4   2   3   2   6   2   ...)
+
+In that second stream, every other number is 2, so if we had a TWOS stream
+we could interleave it with something else:
+
+(  2       2       2       2       2       2       2       2       2   ...)
+(      3       4       3       5       3       4       3       6       ...)
+
+But in *that* new stream, every other number is 3...  A pattern emerges.
+First we need a way to make an infinite stream of all the same N, for
+any N:
+
+(define (n-stream n)
+  (cons-stream n (n-stream n)))
+
+At this point it's easy to make a mistake, as follows:
+
+(define (bad-hanoi-substream n)
+  (interleave (n-stream n)
+	      (bad-hanoi-substream (+ n 1))))
+
+(define hanoi (bad-hanoi-substream 1))	;;; wrong!
+
+The problem is that INTERLEAVE is an ordinary procedure, not a special
+form, so it doesn't delay its second argument as CONS-STREAM does.
+If you run this program it'll loop forever without returning a stream.
+
+There are two ways to solve this.  One is to use explicit delays:
+
+(define (hanoi-substream-delayed n)
+  (interleave-delayed (n-stream n)
+		      (delay (hanoi-substream (+ n 1)))))
+
+(define hanoi (hanoi-substream-delayed 1))
+
+The other solution is to rearrange the order so that we use an
+explicit CONS-STREAM in the definition:
+
+(define (hanoi-substream n)
+  (cons-stream n
+	       (interleave (hanoi-substream (+ n 1))
+			   (n-stream n))))
+
+(define hanoi (hanoi-substream 1))
+
+Note that interchanging the order of the arguments to interleave
+is necessary to counteract the extra N at the beginning.
+
+
+Fifth category (two correct solutions):
+
+As in the fourth category, we notice that ones are interleaved with
+non-ones:
+
+(1   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1 ...)
+(  2   3   2   4   2   3   2   5   2   3   2   4   2   3   2   6   2   ...)
+
+Subtract 1 from every element of that second stream, and what do you get?
+
+(  1   2   1   3   1   2   1   4   1   2   1   3   1   2   1   5   1   ...)
+
+Hey!  It's the infinite Hanoi stream!  With this insight we don't even
+have to write a procedure; we can use an implicit recursion based on
+the stream's name.
+
+Again we have to be careful either to use INTERLEAVE-DELAYED or to start
+with an explicit CONS-STREAM:
+
+(define hanoi (cons-stream 1 (interleave (stream-map + hanoi ones)
+					 ones)))
+
+
+Scoring:  Two points for a correct solution.  There were three basic
+categories of incorrect solution:
+
+(a) Ones that would work in a normal-order Scheme, namely the ones
+we had to fix with explicit DELAYs: one point, because the math is
+correct and it's a Scheme deficiency that gets in the way.
+
+(b) Streams of streams, e.g., ((1) (2 1) (3 1 2 1) (4 1 2 1 3 1 2 1) ...)
+(c) Wrong sequences, e.g., (1 2 1 2 1 2 1 2 ...)
+
+No points for (b) or (c).

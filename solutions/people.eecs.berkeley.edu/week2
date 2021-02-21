@@ -1,0 +1,509 @@
+CS 61A		Week 2		Lab and Homework Solutions
+
+FIRST LAB:
+
+Problem 1:
+
+f	Any definition at all will do:
+		(define f 'hello)		f is  hello
+		(define f (+ 2 3))		f is  5
+		(define (f x) (+ x 7))		f is  #<procedure f>
+
+(f)	This expression says to invoke f as a procedure with no
+	arguments.  For that to work, we must DEFINE f as a procedure
+	with no arguments:
+		(define (f) 'hello)		(f) is  hello
+		(define (f) (+ 2 3))		(f) is  5
+	Each of these is shorthand for an explicit use of lambda:
+		(define f (lambda () 'hello))
+		(define f (lambda () (+ 2 3))
+
+(f 3)	This expression says to invoke f as a procedure with an
+	argument, so we have to define it that way:
+		(define (f x) (+ x 5))		(f 3) is  8
+		(define (f x) 'hello)		(f 3) is  hello
+		(define (f x) (word x x))	(f 3) is  33
+	Again, these definitions are shorthand for lambda expressions:
+		(define f (lambda (x) (+ x 5)))
+		(define f (lambda (x) 'hello))
+		(define f (lambda (x) (word x x)))
+
+((f))	This expression says, first of all, to compute the subexpression
+	(f), which invokes f as a procedure with no arguments.  Then, the
+	result of that invocation must be another procedure, which is
+	also invoked with no arguments.  So, we have to define f as a
+	procedure that returns a procedure:
+		(define (f) (lambda () 'hello))	     ((f)) is  hello
+		(define (f) (lambda () (+ 2 3)))     ((f)) is  5
+	Or without the shorthand,
+		(define f (lambda () (lambda () 'hello)))
+		(define f (lambda () (lambda () (+ 2 3))))
+	Alternatively, we can let the procedure f return some procedure
+	we already know about, supposing that that procedure can be
+	invoked with no arguments:
+		(define (f) +)		             ((f)) is  0
+		(define f (lambda () +))
+	As a super tricky solution, for hotshots only, try this:
+		(define (f) f)			     ((f)) is  #<procedure f>
+						     (((f))) is.... ?
+
+(((f)) 3)  Sheesh!  F has to be a function.  When we invoke it with no
+	   arguments, we should get another function (let's call it G).
+	   When we invoke G with no arguments, we get a third function
+	   (call it H).  We have to be able to call H with the argument 3
+	   and get some value.  We could spell this out as a sequence of
+	   definitions like this:
+		(define (h x) (* x x))
+		(define (g) h)
+		(define (f) g)			(((f)) 3) is  9
+	   Alternatively, we can do this all in one:
+		(define (f) (lambda () (lambda (x) (* x x))))
+	   or without the abbreviation:
+		(define f (lambda () (lambda () (lambda (x) (* x x)))))
+
+By the way, you haven't yet learned the notation for functions that accept
+any number of arguments, but if you did know it, you could use
+		(define (f . args) f)
+as the answer to *all* of these problems!
+
+
+Problem 2:
+
+This is a "do something to every word of a sentence" problem, like
+PL-SENT or SQUARES, but with two extra arguments.  But it
+also has a decision to make for each word (is this word equal to the
+one we're replacing), like the filtering procedures EVENS, ENDS-E, etc.,
+so it takes the form of a three-branch COND:
+
+(define (substitute sent old new)
+  (cond ((empty? sent) '())
+	((equal? (first sent) old)
+	 (se new (substitute (butfirst sent) old new)))
+	(else (se (first sent) (substitute (butfirst sent) old new)))))
+
+
+Problem 3:
+
+Of course you could just try this on the computer, but you should understand
+the results.
+
+(t 1+) means that we should substitute the actual argument, which is the
+function named 1+, for t's formal parameter, which is f, in t's body,
+which is (lambda (x) (f (f (f x)))).  The result of the substitution is
+
+		(lambda (x) (1+ (1+ (1+ x))))
+
+Evaluating this produces a function that adds three to its argument, so
+((t 1+) 0) is 3.
+
+(t (t 1+)) means to substitute (t 1+) for f in t's body.  If we actually
+substituted the lambda expression above for f three times, we'd get a
+horrible mess:
+
+		(lambda (x) ((lambda (x) (1+ (1+ (1+ x))))
+			     ((lambda (x) (1+ (1+ (1+ x))))
+			      ((lambda (x) (1+ (1+ (1+ x))))
+			       0))))
+
+but what's important is the function, not the expression that produced
+the function, so we can just mentally give (t 1+) the name 3+ and then
+the result we want is
+
+		(lambda (x) (3+ (3+ (3+ x))))
+
+and if we apply that function to 0 we'll get 9.
+
+For the final piece of the problem, we have to begin by computing (t t), which
+is what we get when we substitute t for f in t's body:
+
+		(lambda (x) (t (t (t x))))
+
+Don't be confused!  Even though this lambda expression has x as its formal
+parameter, not f, the argument has to be a function, because we're going to
+end up invoking t on that argument.  In other words, (t t) returns as its
+value a function that takes a function as argument.
+
+Now, ((t t) 1+) means to apply the function just above to the argument 1+
+which, in turn, means to substitute 1+ for x in the body:
+
+		(t (t (t 1+)))
+
+Well, this isn't so hard; we've really already done it.  (t 1+) turned
+out to be 3+, and (t (t 1+)) turned out to be 9+.  By the same reasoning,
+this will turn out to be 27+ (that is, 9+ three times), so when we apply
+this to 0 we get 27.
+
+Problem 4:
+
+This is actually the same as problem 2!  The function S is identical to
+1+, so the answers have to be the same.  It's more work if you actually
+substitute values into the body of s, but you can avoid all that if you
+realize that these problems are identical in meaning.
+
+Problem 5:
+
+If (g) is a legal expression, then g takes ZERO arguments.
+If ((g) 1) has the value 3, then (g) has a PROCEDURE as its value.
+(If we'd asked for more than one word, you could say "a procedure
+of one numeric argument that returns a number" or something.)
+
+
+Problem 6:
+
+(define (make-tester who)
+  (lambda (x) (equal? x who)))
+
+
+
+HOMEWORK:
+
+Exercise 1.31(a):  
+
+;; you only needed to hand in one version
+;; but by now you're ready to understand both:
+
+;; recursive version:
+
+(define (product term a next b)
+  (if (> a b)
+      1       ;; Note multiplicative identity is 1 not 0
+      (* (term a)
+	 (product term (next a) next b))))
+
+;; iterative version:
+
+(define (product term a next b)
+  (define (iter a result)
+    (if (> a b)
+	result
+	(iter (next a) (* result (term a)))))
+  (iter a 1))
+
+;; factorial
+
+(define (! n) (product (lambda (x) x) 1 1+ n))
+
+;; pi
+;; You have to run a few hundred terms to get a good approximation.
+;; There are several possible ways to arrange the terms.  Here is one
+;; way, in which the first term is 2/3, the second is 4/3, etc.
+
+(define (pi terms) (* 4 (product
+			 (lambda (x) (/ (* 2 (1+ (floor (/ x 2))))
+					(1+ (* 2 (ceiling (/ x 2))))))
+			 1 1+ terms)))
+
+;; Here is another way, in which the first term is (2/3)*(4/3), the
+;; second is (4/5)*(6/5), etc.  Notice that the value of a starts at
+;; 3 and is increased by 2 for each new term.
+
+(define (pi terms) (* 4 (product
+			 (lambda (x) (/ (* (-1+ x) (1+ x))
+					(* x x) ))
+			 3
+			 (lambda (x) (+ x 2))
+			 terms )))
+
+;; If you try to make it 2 * (4/3) * (4/3) * (6/5) * (6/5) * ... you'll
+;; get the wrong answer, because you'll have one more number in the
+;; numerator than in the denominator.
+
+
+
+Exercise 1.32(a):  
+
+;; you only needed to hand in one version
+
+;; recursive form
+
+(define (accumulate combiner null-value term a next b)
+  (if (> a b)
+      null-value
+      (combiner (term a)
+		(accumulate combiner null-value term (next a) next b))))
+
+;; iterative form
+
+(define (accumulate combiner null-value term a next b)
+  (define (iter a result)
+    (if (> a b)
+	result
+	(iter (next a) (combiner (term a) result))))
+  (iter a null-value))
+
+;; sum and product
+
+(define (sum term a next b) (accumulate + 0 term a next b))
+
+(define (product term a next b) (accumulate * 1 term a next b))
+
+
+
+Exercise 1.33:  
+
+;; The problem only requires one version but this too can be
+;; recursive or iterative.  Recursive version:
+
+(define (filtered-accumulate combiner null-value term a next b predicate)
+  (cond ((> a b) null-value)
+	((predicate a)
+	 (combiner (term a)
+		   (filtered-accumulate combiner
+					null-value
+					term
+					(next a)
+					next
+					b
+					predicate)))
+	(else (filtered-accumulate combiner
+				   null-value
+				   term
+				   (next a)
+				   next
+				   b
+				   predicate))))
+
+;; Iterative version:
+
+(define (filtered-accumulate combiner null-value term a next b predicate)
+  (define (iter a result)
+    (cond ((> a b) result)
+	  ((predicate a) (iter (next a) (combiner (term a) result)))
+	  (else (iter (next a) result))))
+  (iter a null-value))
+
+;; (a) sum of squares of primes
+
+(define (sum-sq-prime a b)
+  (define (square x) (* x x))
+  (filtered-accumulate + 0 square a 1+ b prime?))
+
+;; (b) product of blah blah, using gcd from page 49
+
+(define (prod-of-some-numbers n)
+  (filtered-accumulate *
+		       1
+		       (lambda (x) x)
+		       1
+		       1+
+		       n
+		       (lambda (x) (= 1 (gcd x n)))))
+
+
+Exercise 1.40:
+
+(define (cubic a b c)
+  (lambda (x) (+ (* x x x) (* a x x) (* b x) c)))
+
+
+Exercise 1.41:
+
+(define (double f)
+  (lambda (x) (f (f x))))
+
+
+Why does (((double (double double)) inc) 5) return 21 and not 13?
+The crucial point is that DOUBLE is not associative.
+
+> (((double (double double)) inc) 5)
+21
+> ((double (double (double inc))) 5)
+13
+
+DOUBLE turns a function into one that applies the function twice.
+(DOUBLE DOUBLE) turns a function into one that applies the function
+four times.
+(DOUBLE (DOUBLE DOUBLE)) makes a function that applies (DOUBLE DOUBLE)
+twice -- that is, make a function that applies the argument function
+four times four times!
+
+
+
+Exercise 1.43:  
+
+(define (repeated f n)
+  (lambda (x)
+    (if (= n 0)
+	x
+	(f ((repeated f (- n 1)) x)))))
+
+or
+
+(define (repeated f n)
+  (lambda (x)
+    (if (= n 0)
+	x
+	((repeated f (- n 1)) (f x)))))
+
+or
+
+(define (repeated f n)
+  (if (= n 0)
+  (lambda (x) x)
+  (lambda (x) (f ((repeated f (- n 1)) x)))))
+
+
+We didn't assign 1.42, but if you followd the hint about it in 1.43,
+you'd end up with this:
+
+(define (repeated f n)
+  (if (= n 0)
+      (lambda (x) x)
+      (compose f (repeated f (- n 1)))))
+
+
+1.46
+
+This problem is a little complicated in its details because there are so
+many different procedures involved, with different domains and ranges.
+But don't let that keep you from seeing the beauty of this extremely
+general method!
+
+(define (iterative-improve good-enough? improve)
+  (define (iterate guess)
+    (if (good-enough? guess)
+	guess
+	(iterate (improve guess))))
+  iterate)
+
+(define (sqrt x)  ;; compare to bottom of page 30 of SICP
+  ((iterative-improve (lambda (guess) (< (abs (- (square guess) x)) 0.001))
+		      (lambda (guess) (average guess (/ x guess))))
+   1.0))
+
+Some people were confused about sqrt because the original good-enough? takes
+two arguments, and iterative-improve only allows for one.  But we are using
+lexical scope so that the lambda expressions used as arguments to
+iterative-improve have access to the starting value x.
+
+(define (fixed-point f first-guess)  ;; compare to page 69
+  ((iterative-improve (lambda (guess) (< (abs (- guess (f guess))) tolerance))
+		      f)
+   first-guess))
+
+Here the structure is a little different from what's in the book, because
+there is no variable NEXT to hold the next guess.  The solution above computes
+(f guess) twice for each guess.  If you don't like that, you could use a more
+complicated solution in which the argument to the good-enough procedure is a
+sentence containing both old and new guesses:
+
+(define (fixed-point f first-guess)
+  ((iterative-improve (lambda (guesses)
+			(< (abs (- (first guesses) (last guesses))) tolerance))
+		      (lambda (guesses)
+			(sentence (last guesses) (f (last guesses)))))
+   (sentence first-guess (f first-guess))))
+
+but I don't think the constant-factor efficiency improvement is worth the
+added complexity of the code.
+
+
+--------
+
+2.  EVERY:
+
+(define (every f sent)
+  (if (empty? sent)
+      '()
+      (se (f (first sent))
+	  (every f (butfirst sent)) )))
+
+
+--------
+
+Extra for experts:
+
+This is a really hard problem!  But its solution comes up enough in the
+literature that it has a name:  the Y combinator.  First here's the
+combinator alone:
+
+(lambda (f) (lambda (n) (f f n)))
+
+And here's the factorial function using it:
+
+(  (lambda (f) (lambda (n) (f f n)))
+   (lambda (fun x)
+     (if (= x 0)
+	 1
+	 (* x (fun fun (- x 1)))))  )
+
+And now here's (fact 5):
+
+(  (  (lambda (f) (lambda (n) (f f n)))
+      (lambda (fun x)
+	(if (= x 0)
+	    1
+	    (* x (fun fun (- x 1)))))  )
+   5)
+
+The trick is that instead of the factorial function taking a number as an
+argument, it takes TWO arguments, a function (which will really be itself when
+called) and a number.  The recursive call is done using the function provided
+as argument.
+
+The job of the Y combinator is to provide the function with itself as an
+argument.
+
+If that seems like a rabbit out of a hat, here's a longer explanation:
+
+The problem we're trying to solve is that factorial wants to be able to call
+itself recursively, and to do that it has to have a name for itself.  We have
+two ways to give something a name, and one of them, DEFINE, is ruled out in
+this problem.  That leaves procedure invocation, which associates formal
+parameters (the names) with actual arguments (the values).  So we could
+do this:
+
+((lambda (f n) (if (= n 0) 1 (* n (f f (- n 1)))))
+ (lambda (f n) (if (= n 0) 1 (* n (f f (- n 1)))))
+ 5)
+
+to get the factorial of 5.  Ordinarily we think of factorial as a function
+of one argument (N); here we've added a formal parameter F whose value is
+another copy of the same function.  If you work through this expression,
+you'll see that the first copy is called only for N=5; the other calls for
+all smaller values of N use the second copy, because (unlike the first) it
+is called with *itself* (the very same lambda-created procedure) as its
+argument.
+
+Now, it's a little ugly having to type the procedure twice.  Also, I sort of
+half lied when I said there are only two ways to give something a name.
+There's a kind of third way, LET, although that's really the same as creating
+and calling a procedure; and LET is good at avoiding having to type something
+twice.  So you might be tempted to say
+
+(let ((fact (lambda (n) (if (= n 0) 1 (* n (fact (- n 1)))))))
+  (fact 5))
+
+But this doesn't work, because the name "fact" doesn't mean that lambda-
+created procedure when the lambda expression is evaluated; that association
+holds only in the body of the let.  If that isn't clear, we can expand it:
+
+((lambda (fact) (FACT 5))
+ (lambda (n) (if (= n 0) 1 (* n (fact (- n 1))))))
+
+The capitalized FACT above is inside the lambda of which fact is the formal
+parameter, so the (lambda (n) ...) procedure is substituted for it.  But the
+name "fact" also appears on the second line of the expression, in the actual
+argument expression, and *that* isn't inside the (lambda (fact) ...), so
+there is no substitution; it will look for a global name fact.  Thus we have
+to have F (in the original solution above) take *itself* as an argument, so
+that the substitution happens in the right place.  We could do that with a
+LET form equivalent to the original solution:
+
+(let ((f (lambda (f n) (if (= n 0) 1 (* n (f f (- n 1)))))))
+  (f f 5))
+
+This one does work.  Notice that the body of the let, (f f 5), is almost
+like the Y combinator's body, except that the latter generalizes to a
+function of N instead of having 5 built in, like this LET expression:
+
+(let ((f (lambda (f n) (if (= n 0) 1 (* n (f f (- n 1)))))))
+  (lambda (n) (f f n)))
+
+Now just rearrange this to eliminate the LET abbreviation:
+
+((LAMBDA (F) (LAMBDA (N) (F F N)))
+ (lambda (f n) (if (= n 0) 1 (* n (f f (- n 1))))))
+
+This returns a function of N, the factorial function.  And the capitalized
+part is the Y combinator.

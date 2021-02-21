@@ -1,0 +1,1008 @@
+CS 61A       Week 12 solutions
+
+LAB EXERCISES
+=============
+
+3.  Why doesn't make-procedure call eval?
+
+Because none of the arguments to lambda should be evaluated.
+In particular, the expressions that make up the body of the procedure are
+not evaluated until the procedure is *invoked*!
+
+
+4.1, left-to-right
+
+(define (list-of-values exps env)       ;; left to right
+  (if (no-operands? exps)
+      '()
+      (let ((left (eval (first-operand exps) env)))
+	(cons left (list-of-values (rest-operands exps) env)))))
+
+(define (list-of-values exps env)       ;; right
+  (if (no-operands? exps)
+      '()
+      (let ((right (list-of-values (rest-operands exps) env)))
+	(cons (eval (first-operand exps) env) right))))
+
+
+4.2, Louis reordering
+
+(a)  The trouble is that APPLICATION? cheats.  The book has
+
+(define (application? exp) (pair? exp))
+
+It really should be something like
+
+(define (application? exp)
+  (and (pair? exp)
+       (not (member (car exp) '(quote set! define if lambda begin cond)))))
+
+They get away with the shorter version precisely because EVAL doesn't
+call APPLICATION? until after it's checked for all the possible special
+forms.  Louis (quite reasonably, I think) wants to rely on APPLICATION?
+behaving correctly no matter when it's called.
+
+(b)  All we are changing is the syntax of an application, so we
+change the procedures that define the "application" abstract data type.
+These are on page 372 of the text.  The new versions are:
+
+(define (application? exp)
+  (tagged-list? exp 'call))
+
+(define (operator exp) (cadr exp))
+
+(define (operands exp) (cddr exp))
+
+
+4.4 AND and OR special forms
+
+The book suggests two solutions: make them primitive special forms
+or make them derived expressions.  We'll do both.
+
+As primitive special forms:
+
+Change the COND clause in EVAL by adding
+
+  (cond ...
+	((and? exp) (eval-and exp env))
+	((or? exp) (eval-or exp env))
+	...)
+
+(define (eval-and exp env)
+  (define (iter tests)
+    (cond ((null? tests) #t)
+	  ((null? (cdr tests)) (eval (car tests) env))
+	  ((true? (eval (car tests) env)) (iter (cdr tests)))
+	  (else #f)))
+  (iter (cdr exp)))
+
+(define (eval-or exp env)
+  (define (iter tests)
+    (if (null? tests)
+	#f
+	(let ((result (eval (car tests) env)))
+	  (if (true? result)
+	      result
+	      (iter (cdr tests))))))
+  (iter (cdr exp)))
+
+Now for the derived expression technique.  Modify the COND clause
+in EVAL this way instead:
+
+  (cond ...
+	((and? exp) (eval (and->if (cdr exp)) env))
+	((or? exp) (eval (or->if (cdr exp)) env))
+	...)
+
+(define (and->if exps)
+  (cond ((null? exps) #t)
+	((null? (cdr exps)) (car exps))
+	(else (make-if (car exps)
+		       (and->if (cdr exps))
+		       #f))))
+
+(define (or->if exps)
+  (if (null? exps)
+      #f
+      (make-if (car exps)
+	       (car exps)
+	       (or->if (cdr exps)))))
+
+This version is elegant but has the disadvantage that you end up
+computing the first true value twice.
+
+
+4.5  Cond => notation
+
+(define (expand-clauses clauses)
+  (if (null? clauses)
+      'false
+      (let ((first (car clauses))
+	    (rest (cdr clauses)))
+	(if (cond-else-clause? first)
+	    (if (null? rest)
+		(sequence->exp (cond-actions first))
+		(error "..."))
+	    (IF (COND-ARROW-CLAUSE? FIRST)
+		(LIST (MAKE-LAMBDA '(COND-FOO)
+				   (MAKE-IF 'COND-FOO
+					    (LIST (COND-ARROW-DOER FIRST)
+						  'COND-FOO)
+					    (EXPAND-CLAUSES REST)))
+		      (COND-PREDICATE FIRST))
+		(make-if (cond-predicate first)
+			 (sequence->exp (cond-actions first))
+			 (expand-clauses rest)))))))
+
+(define (cond-arrow-clause? clause)
+  (and (pair? clause)
+       (= (length clause) 3)
+       (eq? (cadr clause) '=>)))
+
+(define (cond-arrow-doer clause)
+  (caddr clause))
+
+This may be a little confusing.  What it does is to turn a clause like
+
+        (test => recipient)
+
+into
+
+        ((lambda (cond-foo)
+	   (if cond-foo
+	       (recipient cond-foo)
+	       <expanded-rest-of-clauses>))
+	 test)
+
+Using the name cond-foo here is a kludge, because what if the user
+has used the same name for some other purpose within the clause?
+The right thing would be to generate an otherwise-untypable symbol
+each time.  But this is complicated enough already.
+
+By the way, this is really trying to do
+
+        (let ((cond-foo test))
+	  (if ...))
+
+but we don't yet have LET in the metacircular Scheme.
+
+It might be easier to do this by abandoning the whole idea of
+cond->if and just implementing cond directly.
+
+
+5b.  In Logo there are no internal definitions; all procedures are global.
+So we need a situation with two procedures, one of which calls the other:
+
+to outer :var
+inner
+end
+
+to inner
+print :var
+end
+
+? outer 23
+23
+
+To see that this result is different from what would happen with lexical
+scope, try the same example in Scheme:
+
+(define (outer var)
+  (inner))
+
+(define (inner)
+  (print var))
+
+> (outer 23)
+Error -- unbound variable: var
+
+(Or you could define a global variable var whose value is something other
+than 23, and then (outer 23) would print that other value.
+
+
+5c.
+
+Logo " is like Scheme ' -- it's the quoting symbol.  But in Logo it is used
+only with words, not with lists, and there is no QUOTE special form which the
+quotation character abbreviates.
+
+Logo [ ] are like '( ) in Scheme -- the brackets both delimit and quote a
+list.  But within a list, brackets are used to delimit sublists, and don't
+imply an extra level of quotation, so Logo [a [b c] d] means '(a (b c) d),
+not '(a '(b c) d).  So, how do you get the effect of Scheme's ( ) without
+quotation?  In Scheme that means to call a procedure; in Logo you don't
+need any punctuation to call a procedure!  You just give the procedure name
+and its arguments.  But in Logo you *can* use parentheses around a procedure
+call just as you would in Scheme.
+
+Logo : means that you want the value of the variable whose name follows the
+colon.  In Scheme the name by itself means this -- if you want the value of
+variable X, you just say X.  The reason this doesn't work in Logo is that
+in Logo procedures aren't just another data type, and a procedure name isn't
+just the name of a variable whose value happens to be a procedure.  (In other
+words, Logo procedures are not first-class.)  In Logo there can be a procedure
+and a variable with the same name, so FOO means the procedure and :FOO means
+the variable.
+
+
+HOMEWORK
+========
+
+4.3  data-directed eval
+
+The table itself could be done in several ways; perhaps the easiest
+is to use the built-in table from chapter 2.  So we say:
+
+(put 'quote 'eval text-of-quotation)
+(put 'define 'eval eval-definition)
+(put 'set! 'eval eval-assignment)
+
+Where the original eval does something other than (foo exp env) we
+have to write an interface procedure.  For example:
+
+(define (eval-lambda exp env)
+  (make-procedure (lambda-parameters exp) (lambda-body exp) env))
+
+(put 'lambda 'eval eval-lambda)
+
+
+(define (eval exp env)
+  (cond ((self-evaluating? exp) exp)
+	((variable? exp) (lookup-variable-value exp env))
+	(else (let ((form (get (operator exp) 'eval)))
+		 (if form       	;; IT'S A SPECIAL FORM
+		     (form exp env)	;; SO form IS THE PROCEDURE TO CALL
+		     (apply (eval (operator exp) env)
+			    (list-of-values (operands exp) env) ))))))
+
+The first two COND clauses deal with atomic expressions: numbers (which
+are self-evaluating) and symbols (which represent variables).  If the
+expression is neither of those, then it's a list, and we look at its
+CAR.  We look that up in the table; if we find it, the expression is a
+special form, and we invoke the particular procedure that knows about
+that special form.  Otherwise, it's a regular procedure.
+We're neglecting various kinds of errors that might occur with mal-formed
+input.
+
+We also have to rewrite text-of-quotation so that it accepts an extra
+input, the environment, even though it doesn't need it:
+
+(define (text-of-quotation exp env)
+  (cadr exp))
+
+And we have to write a new "front end" to cond->if:
+
+(define (eval-cond exp env)
+  (eval (cond->if exp) env))
+
+and put that in the table.
+
+It would also be possible to include the atomic expressions in the
+general data-directed mechanism by assigning them implicit types just as
+we assigned Scheme numbers an implicit type in exercise 2.78, page 193:
+
+(define (expression-type exp)
+  (cond ((self-evaluating? exp) '(() SELF-EVALUATING))
+	((symbol? exp) '(() SYMBOL))
+	((pair? exp) (car exp))
+	(else (error "Unknown expression type" exp))))
+
+(define (eval exp env)
+  (let ((handler (get (expression-type exp) 'eval)))
+    (if handler
+	(handler exp env)
+	(apply (eval (operator exp) env)
+	       (list-of-values (operands exp) env)))))
+
+(put '(() self-evaluating) 'eval (lambda (exp env) exp))
+(put '(() symbol) 'eval lookup-variable-value)
+
+The reason for using (() SYMBOL) instead of just SYMBOL as the type tag
+is that otherwise we'd get in trouble if an expression tried to call a
+procedure named SYMBOL.  These type tags aren't valid Scheme expressions,
+so they shouldn't get us in trouble.
+
+
+4.6  Implementing LET   
+
+;; In eval's big cond we put
+
+	((let? exp) (eval (let->combination exp) env))
+
+;; Now for the guts of the problem:
+
+(define (let->combination exp)
+  (cons (make-lambda (let-formals exp)
+		     (let-body exp))
+	(let-actuals exp)))
+
+;; And now for the data abstraction stuff:
+
+(define (let? exp)
+  (tagged-list? exp 'let))
+
+(define (let-formals exp)
+  (map car (cadr exp)))
+
+(define (let-actuals exp)
+  (map cadr (cadr exp)))
+
+(define (let-body exp)
+  (cddr exp))
+
+
+Please note that this problem becomes MUCH easier if you ruthlessly separate
+the semantics (let->combination) from the mickey mouse work of extracting
+the syntactic components.  I actually wrote this in the order in which it
+appears here; in essence I solved the problem completely before I thought at
+all about syntactic issues.
+
+
+4.7 Implementing Let*
+
+(define (let*->nested-lets exp)
+  (if (null? (let-bindings exp))
+      (make-let '() (let-body exp))
+      (make-let (list (car (let-bindings exp)))
+		(list (make-let* (cdr (let-bindings exp))
+				 (let-body exp))))))
+
+(define (let-bindings exp)
+  (cadr exp))
+
+(define (make-let bindings body)
+  (cons 'let (cons bindings body)))
+
+(define (make-let* bindings body)
+  (cons 'let* (cons bindings body)))
+
+I'm cheating slightly by using LET-BODY for a LET* expression instead
+of inventing a whole new abstract data type.  In principle someone
+might want to change Scheme so that the syntax of LET* looks different
+from the syntax of LET.
+
+
+4.10 new syntax
+
+Okay, let's make the syntax of IF look like it does in those other bad
+languages.  (After all, any change we make to Scheme's syntax *has* to make
+it worse!)  The new syntax will be (if ... then ... else ...).
+
+(define (if? exp)
+  (and (tagged-list? exp 'if)
+       (eq? (caddr exp) 'then)
+       (or (= (length exp) 4)
+	   (eq? (list-ref exp 4) 'else))))
+
+(define (if-predicate exp) (cadr exp))
+
+(define (if-consequent exp) (cadddr exp))
+
+(define (if-alternative exp) (list-ref exp 5))
+
+Of course you can do lots of other changes too, so if you're copying
+last semester's answers next semester, the reader will be suspicious
+if you come up with this choice!  :-)
+
+
+4.11  changed frame representation
+
+(define (make-frame variables values)
+  (attach-tag 'frame (map cons variables values)))
+
+(define (frame-variables frame)
+  (map car (contents frame)))
+
+(define (frame-values frame)
+  (map cdr (contents frame)))
+
+(define (add-binding-to-frame! var val frame)
+  (set-cdr! frame (cons (cons var val) (contents frame))))
+
+As explained in footnote 14 on page 378, the procedures lookup-variable-value,
+set-variable-value!, and define-variable! aren't just above-the-line users of
+the frame ADT, because the latter two use SET-CAR! to modify frames.
+Lookup-variable-value could actually work exactly as written, but the others
+have to be changed, and that one should also be changed, to use ASSOC in
+their SCAN internal procedures.  Basically these will look like the table
+procedures from chapter 3:
+
+(define (lookup-variable-value var env)
+  (define (env-loop env)
+    (DEFINE (SCAN ALIST)
+      (LET ((RESULT (ASSOC VAR ALIST)))
+	(IF RESULT
+	    (CDR RESULT)
+	    (ENV-LOOP (ENCLOSING-ENVIRONMENT ENV)))))
+    (if (eq? env the-empty-environment)
+	(error "Unbound variable" var)
+	(let ((frame (first-frame env)))
+	  (SCAN (CONTENTS FRAME)))))
+  (env-loop env))
+
+(define (set-variable-value! var val env)
+  (define (env-loop env)
+    (DEFINE (SCAN ALIST)
+      (LET ((RESULT (ASSOC VAR ALIST)))
+	(IF RESULT
+	    (SET-CDR! RESULT VAL)
+	    (ENV-LOOP (ENCLOSING-ENVIRONMENT ENV)))))
+    (if (eq? env the-empty-environment)
+	(error "Unbound variable -- SET!" var)
+	(let ((frame (first-frame env)))
+	  (SCAN (CONTENTS FRAME)))))
+  (env-loop env))
+
+(define (define-variable! var val env)
+  (let ((frame (first-frame env)))
+    (DEFINE (SCAN ALIST)
+      (LET ((RESULT (ASSOC VAR ALIST)))
+	(IF RESULT
+	    (SET-CDR! RESULT VAL)
+	    (ADD-BINDING-TO-FRAME! VAR VAL FRAME))))
+    (SCAN (CONTENTS FRAME))))
+
+If I hadn't attached a tag to the frames, this would be harder.
+I wouldn't be able to have an add-binding-to-frame! procedure
+because there wouldn't be anything in an empty frame to mutate.
+Instead, define-variable! would have to get more complicated.
+
+
+4.13  make-unbound   
+
+First, about the design issues:  I see three possibilities.  You can
+require that the symbol be bound in the current environment and remove
+that binding only; you can remove the nearest single binding; or you can
+remove all bindings of that symbol.  Perhaps the best solution in any case
+where it's not obvious what the right semantics is would be to provide
+all three versions: unbind-this-frame, unbind-nearest, and unbind-all.
+That way the user can decide for herself what best suits the application
+at hand.  Failing that, I vote for the second choice: removing the nearest
+binding.  Here's why.  First of all, the third version can be written in
+terms of the second:
+
+(define (unbind-all sym)
+  (cond ((bound? sym)
+	 (unbind-nearest sym)
+	 (unbind-all sym))
+	(else '())))
+
+(This assumes we have a predicate bound? that returns true if there is
+an accesible binding for the symbol.  If we provide any form of unbinding
+we should probably provide that too.)  But the second can't be written in
+terms of the third.  So if we're only having one we should have the more
+flexible one.  I rule out the first (current frame only) because I can
+easily imagine wanting to write a procedure like
+
+(define (cleanup)
+  (make-unbound 'a)
+  (make-unbound 'b)
+  (make-unbound 'c))
+
+that removes global variables at the end of a computation, but this
+wouldn't be possible under the first option.  (Why not?)
+
+I have also implicitly decided another design question: should this be
+a special form that requires an unevaluated symbol, like set!, or should
+it be an ordinary procedure whose actual parameter is evaluated?  In
+order to make things like unbind-all (above) work, it should be an ordinary
+procedure.  (What I want to get unbound is the actual argument to
+unbind-all, not the symbol "sym" itself.)  Then again, I think set! should
+be an ordinary procedure, too, so perhaps you're asking the wrong person.
+
+Trouble is, we can't REALLY make make-unbound an ordinary procedure
+because it has to have access to the environment.  If Scheme were
+dynamically scoped, any procedure in the evaluator could just make a
+free reference to "env" to get the current user environment, but as it
+is we have to have eval treat make-unbound specially.  So we'll make 
+it a special form but still have it evaluate everything.
+
+(define (eval-make-unbound exp env)
+  (define (unbind-in-frame sym frame)
+    (define (remove-not-first-binding vars vals)
+      (if (eq? sym (cadr vars))
+	  (begin (set-cdr! vars (cddr vars))
+		 (set-cdr! vals (cddr vals)))
+	  (remove-not-first-binding (cdr vars) (cdr vals))))
+    (if (eq? sym (car (frame-variables frame)))
+	(begin (set-car! frame (cdr (frame-variables frame)))
+	       (set-cdr! frame (cdr (frame-values frame))))
+	(remove-not-first-binding (frame-variables frame)
+				  (frame-values frame))))
+  (define (env-iter sym env)
+    (cond ((eq? env the-empty-environment) 'okay)
+	  ((memq sym (frame-variables (first-frame env)))
+	   (unbind-in-frame sym (first-frame env)))
+	  (else (env-iter sym (enclosing-environment env)))))
+  (env-iter (eval (cadr exp) env) env))
+
+This is rather messier than one might wish, because if the binding in
+question is the first one in a frame, we have to remove it differently from
+if it's not the first in a frame.  In the first case we mutate the header
+pair of the frame; in the second case we splice elements out of two lists.
+Had this evaluator been written with unbinding in mind, they might have
+picked a different data structure.  Env-iter looks for the first frame in
+which the symbol is bound, then unbinds it in that frame.  Unbind-in-frame
+first checks the first binding specially, then uses remove-not-first-binding
+to check the other bindings.
+
+Strictly speaking, I should have made mutators for the frame
+abstraction.  The obvious choice would be set-frame-variables! and
+set-frame-values!, but actually that only makes sense if we know that
+the frame is represented as two parallel lists.  If the frame is
+represented as an a-list, as in exercise 4.11, then a better choice
+would be set-frame-bindings!.  So the really right thing, to keep
+the abstraction barrier solid, is to have a mutator frame-remove-binding!
+that would be like the unbind-in-frame part of the code above.  It would
+be different for different representations, but would have the same
+effect above the abstraction barrier.
+
+Finally, we have to modify eval, adding
+
+  ((make-unbound? exp) (eval-make-unbound exp env))
+
+to the big cond.
+
+(define (make-unbound? exp)
+  (tagged-list? exp 'make-unbound))
+
+
+
+4.14 why doesn't map work?
+
+This question is about level confusion.  Let's talk about meta-Scheme,
+the one implemented by the metacircular evaluator, and under-Scheme, the
+regular Scheme in which the MCE is written.
+
+Eva defines MAP in meta-Scheme.  In particular, when MAP tries to invoke
+a meta-Scheme procedure for each element of the list, it's doing a
+meta-Scheme invocation.
+
+Louis uses the MAP that's defined in under-Scheme.  When he calls MAP,
+he is giving it a meta-Scheme procedure as its first argument, but it's
+expecting an under-Scheme procedure.  From the point of view of under-Scheme,
+a meta-Scheme procedure isn't a procedure at all -- it's a list whose car
+is the word PROCEDURE.
+
+
+4.15 the halting problem
+
+This is the most famous problem in automata theory, the most elegant proof that
+some things can't be done no matter how sophisticated our computers become.
+The proof was first given using the "Turing machine," an abstract machine
+that's used only for proving theorems.  But the same idea works in any
+formal system that's capable of representing a procedure as data; the key
+element of the proof is the fact that the hypothetical HALTS? is a
+higher-order function.
+
+Suppose that (HALTS? TRY TRY) returns #T.  Then when we call (TRY TRY)
+it says, after argument substitution,
+
+        (if (halts? try try)
+	    (run-forever)
+	    'halted)
+
+But this will run forever, and so (TRY TRY) runs forever, and so
+(HALTS? TRY TRY) should have returned #F.
+
+Similarly, suppose that (HALTS? TRY TRY) returns #F.  Then (TRY TRY)
+turns into the same IF expression shown above, but this time the
+value of that expression is the word HALTED -- that is, it halts.
+So (HALTS? TRY TRY) should have returned #T.
+
+
+4.22  LET in analyzing evaluator
+
+This is easy, given the hint about 4.6.  We don't have to change the
+procedure LET->COMBINATION we wrote for that exercise; since it deals
+entirely with the expression, and not with the values of variables,
+all of its work can be done in the analysis phase.  All we do is
+change this COND clause in EVAL:
+
+	((let? exp) (eval (let->combination exp) env))
+
+to this COND clause in ANALYZE:
+
+	((let? exp) (analyze (let->combination exp)))
+
+
+4.23  Efficiency of analyze-sequence
+
+For a sequence with just one expression, the book's version does the
+following analysis:  First, the body of analyze-sequence is the LET.
+Suppose that the result of analyzing the one expression is PROC.
+Then the variable PROCS will have as its value a list whose only
+element is PROC.  That's not null, so (still in the analysis part)
+we call (LOOP PROC '()).  In LOOP, since (in this case) REST-PROCS
+is null, LOOP just returns PROC.  So if the analysis of EXP gives
+PROC, then the analysis of (BEGIN EXP) also gives PROC.
+
+In the same one-expression case, Alyssa's version returns
+	(lambda (env) (execute-sequence (list PROC) env))
+So every time this execution procedure is called, execute-sequence
+will check that (cdr procs) is empty, which it is, and then
+calls PROC with the environment as its argument.  This test of
+(null? (cdr procs)) is done for every execution, whereas in the
+book's version it was done just once.
+
+How about the two-expression case.  Suppose that the analysis of
+EXP1 gives PROC1, and the anaylsis of EXP2 gives PROC2.  The book's
+version will call, in effect, (loop PROC1 (list PROC2)).  This
+in turn calls (sequentially PROC1 PROC2), which returns
+	(lambda (env) (PROC1 env) (PROC2 env))
+as the execution procedure.  (There is a recursive call to LOOP,
+but it doesn't change the result, because this time the second
+argument is null.)
+
+Alyssa's version makes the execution procedure be
+	(lambda (env) (execute-sequence (list PROC1 PROC2) env)))
+which in effect means
+	(lambda (env)
+	  (cond ((null? (list PROC2)) ...)
+		(else (PROC1 env)
+		      (cond ((null? '()) (PROC2 env)) ...))))
+Each time this is executed, we do two unnecessary checks for
+the nullness of a list -- unnecessary because we already knew
+while doing the analysis how many expressions are in the sequence.
+
+
+4.24  How fast?
+
+Hint:  You'll get the most dramatic results when an expression
+is evaluated over and over, i.e., with a recursive procedure.
+
+
+
+2.  Type checking
+
+When we define a procedure, we don't even look at the parameter
+list; it's just stored as part of the procedure.  That doesn't
+need to be changed.  When do we have to check the type?  We do it
+when we're invoking a procedure, as part of the process of
+binding names to values.  This happens in extend-environment
+and make-frame.  The only change to extend-environment is that it
+has to supply the environment that we're extending to make-frame,
+because make-frame will have to look up the type predicates:
+
+(define (extend-environment vars vals base-env)
+  (if (= (length vars) (length vals))
+      (cons (make-frame vars vals BASE-ENV) base-env)
+      (if (< (length vars) (length vals))
+	  (error "Too many arguments supplied" vars vals)
+	  (error "Too few arguments supplied" vars vals))))
+
+Make-frame, which was trivial before this change, now has some
+real work to do:
+
+(define (make-frame variables values BASE-ENV)
+  (DEFINE (TYPE-CHECK VAR VAL)
+    (IF (AND (PAIR? VAR)
+	     (NOT (APPLY (EVAL (CAR VAR) BASE-ENV)
+			 (LIST VAL))))
+	(ERROR "WRONG ARGUMENT TYPE" VAL)))
+  (DEFINE (SCAN VARS VALS)
+    (COND ((NULL? VARS) #T)
+	  (ELSE (TYPE-CHECK (CAR VARS) (CAR VALS))
+		(SCAN (CDR VARS) (CDR VALS)))))
+  (SCAN VARIABLES VALUES)
+  (cons (JUST-NAMES variables) values))
+
+(DEFINE (JUST-NAMES VARS)
+  (COND ((NULL? VARS) '())
+	((PAIR? (CAR VARS))
+	 (CONS (CADAR VARS) (JUST-NAMES (CDR VARS))))
+	(ELSE (CONS (CAR VARS) (JUST-NAMES (CDR VARS))))))
+
+Another approach would be to try to modify the procedure as it's being
+created (therefore, in make-procedure, called from eval) so that the type
+checks become part of the procedure's body.  This can be done, but it's
+quite tricky to get it right.  For example, in what environment should the
+names of the type predicates be looked up?
+
+It's a real misunderstanding of the problem to write a solution in which
+specific type predicates such as INTEGER? are built into the evaluator.
+If there's a type checking system, it should work for user-defined types
+as well as for primitive types.  For example, I should be able to say
+that an argument must be a prime number, or must be a three-letter word.
+
+  
+
+Extra for Experts
+=================
+
+4.16
+
+(a)
+
+(define (lookup-variable-value var env)
+  (define (env-loop env)
+    (define (scan vars vals)
+      (cond ((null? vars)
+             (env-loop (enclosing-environment env)))
+            ((eq? var (car vars))
+             (LET ((RESULT (car vals)))			  ;; ***
+	       (IF (EQ? RESULT '*UNASSIGNED*)		  ;; ***
+		   (ERROR "UNBOUND VARIABLE" (CAR VARS))  ;; ***
+		   RESULT)))				  ;; ***
+            (else (scan (cdr vars) (cdr vals)))))
+    (if (eq? env the-empty-environment)
+        (error "Unbound variable" var)
+        (let ((frame (first-frame env)))
+          (scan (frame-variables frame)
+                (frame-values frame)))))
+  (env-loop env))
+
+
+(b)
+
+(define (scan-out-defines body)
+  (cond ((null? body) '())
+	((definition? (car body))
+	 (list	  ; body is a list of expressions, we make one-element list
+	  (cons 'let
+		(cons (make-let-variables (definitions body))
+		      (append (make-setbangs (definitions body))
+			      (non-definitions body))))))
+	(else body)))
+
+(define (definitions body)
+  (cond ((null? body) '())
+	((definition? (car body))
+	 (cons (car body) (definitions (cdr body))))
+	(else '())))
+
+(define (non-definitions body)
+  (cond ((null? body) '())
+	((definition? (car body))
+	 (non-definitions (cdr body)))
+	(else body)))
+
+(define (make-let-variables definitions)
+  (map (lambda (def)
+	 (list (definition-variable def) '(quote *unassigned*)))
+       definitions))
+
+(define (make-setbangs definitions)
+  (map (lambda (def)
+	 (list 'set! (definition-variable def) (definition-value def)))
+       definitions))
+
+
+(c)  It should be in make-procedure, because then the scanning is done only
+once, when the procedure is created, rather than every time the procedure
+is called.  (On the other hand, if Scheme printed procedures in a way that
+showed the body, the user might wonder why the body isn't what s/he wrote.)
+
+(define (make-procedure parameters body env)
+  (list 'procedure parameters (scan-out-defines body) env))
+
+
+4.17
+
+The extra frame is created by the LET we introduced into the procedure body.
+The frame itself would matter only if some expressions were evaluated in the
+outer frame rather than the inner one.  But there are no such expressions,
+except for the (QUOTE *UNASSIGNED*) ones we put in the LET, and those don't
+depend on the environment for their values.
+
+We could do it without the extra frame by scanning
+
+(lambda (args...)
+  (define u e1)
+  (define v e2)
+  ...)
+
+into
+
+(lambda (args)
+  (define u '*unassigned*)
+  (define v '*unassigned*)
+  (set! u e1)
+  (set! v e2)
+  ...)
+
+and continuing to use the sequential version of internal DEFINE already in the
+metacircular evaluator.  (This may seem to have no benefit at all, but it does,
+because the local variables U and V are bound before the expressions E1 and E2
+are evaluated, so we can be sure they won't refer to global variables.)
+
+
+4.18 
+
+You can't actually experiment with this question unless you define DELAY
+and CONS-STREAM as special forms in the metacircular evaluator.
+
+The SOLVE procedure would work using the scan-out approach of 4.16, but not
+using the version proposed in this exercise.  The body of SOLVE would be
+
+	(let ((y '*unassigned*) (dy '*unassigned*))
+	  (let ((gensym1 (integral (delay dy) y0 dt))
+		(GENSYM2 (STREAM-MAP F Y)))
+	    (set! y gensym1)
+	    (set! dy gensym2)
+	    y)
+
+In the line in capital letters, stream-map is an ordinary procedure, so its
+argument expressions are evaluated before stream-map is called.  One of the
+arguments is Y, whose value at this point is *unassigned*, so an error will
+result.  This is consistent with the definition of LETREC in the Scheme
+standard.  (Internal DEFINE is defined by the standard to be equivalent to
+LETREC.  See page 16 of the standard, in the course reader, section 5.5.2.
+Then see pages 11-12 for the discussion of LETREC, especially the last
+paragraph of that section.)
+
+
+4.19
+
+This is answered in the footnote: the authors support Alyssa.
+
+One possible way to get what Eva wants is to use the approach of exercise
+4.16, but instead of giving an error if one of the SET! expressions fails,
+move it to the end of the line, so you keep trying until every variable has a
+value or until no further progress can be made.  So in this example it'd be
+
+	(let ((b '*unassigned*) (a '*unassigned*))
+	  (set!-ignoring-errors b (+ a x))
+	  (set!-ignoring-errors a 5)
+	  (if (unassigned? b) (set! b (+ a x)))
+	  (if (unassigned? a) (set! a 5))
+	  (+ a b))
+
+using pseudo-special-forms SET!-IGNORING-ERRORS and UNASSIGNED? that aren't
+defined but whose meanings should be obvious.  You'd have to repeat the IF
+expressions as many times as you have variables, to be sure that any
+dependency order would work.
+
+Even so, an expression such as
+
+	(define (f x)
+	  (define a (+ b 3))
+	  (define b (+ a 4))
+	  (+ a b))
+
+won't work no matter how many times you try the assignments.
+
+
+4.20
+
+(a)
+
+(define (letrec? exp)
+  (tagged-list? exp 'letrec))
+
+(define (letrec->let exp)
+  (cons 'let
+	(cons (map (lambda (var) (list var '(quote *unassigned*)))
+		   (let-formals exp))
+	      (append (map (lambda (var val) (list 'set! var val))
+			   (let-formals exp)
+			   (let-actuals exp))
+		      (let-body exp)))))
+
+Then add a cond clause to EVAL:
+
+	((letrec? exp) (eval (letrec->let exp) env))
+
+
+(b) In the correct version, after transforming the LETREC as on page 389,
+we have
+
+(define (f x)
+  (let ((even? '*unassigned*) (odd? '*unassigned*))
+    (set! even? (lambda (n) (if (= n 0) true (odd? (- n 1)))))
+    (set! odd? (lambda (n) (if (= n 0) false (even? (- n 1)))))
+    <rest of body of F>))
+
+Evaluating that gives
+
+    global env:  F -> procedure P1
+
+    procedure P1: params (x), body (let ...), global env
+
+When evaluating (F 5), we add
+
+    E1: X -> 5, extends G
+
+The LET expands to a LAMBDA and an invocation:
+
+    procedure P2: params (even? odd?),  body (set! ...)...,  env E1
+
+    E2: EVEN? -> *unassigned*,  ODD? -> *unassigned*,  extends E1
+
+With E2 as the current environment we evaluate the two SET! expressions,
+which create procedures (because of the LAMBDA expressions inside them) and
+change the bindings in E2:
+
+    procedure P3: params (n),  body (if (= n 0) true (odd? ...)),  env E2
+    procedure P4: params (n),  body (if (= n 0) false (even? ...)),  env E2
+
+    E2: EVEN? -> procedure P3,  ODD? -> procedure P4,  extends E1
+
+Note that P3 and P4 are created in E2, so they have access to the bindings
+for EVEN? and ODD?.
+
+Then we evaluate the remaining expression in the body of F, which can use
+EVEN? and ODD? successfully.
+
+By contrast, Louis wants us to evaluate
+
+(define (f x)
+  (let ((even?
+	 (lambda (n)
+	   (if (= n 0)
+	       true
+	       (odd? (- n 1)))))
+	(odd?
+	 (lambda (n)
+	   (if (= n 0)
+	       false
+	       (even? (- n 1))))))
+    <rest of body of F>))
+
+This time, when evaluating (F 5), we still add
+
+    E1: X -> 5, extends G
+
+The LET expands to a LAMBDA and an invocation with procedures as arguments:
+
+    ((lambda (even? odd?) <rest of body>)
+     (lambda (n) (if (= n 0) true (odd? (- n 1))))
+     (lambda (n) (if (= n 0) false (even? (- n 1)))))
+
+The three LAMBDA expressions give us
+
+    procedure P2: params (even? odd?),  body <rest of body>,  env E1
+    procedure P3: params (n),  body (if (= n 0) true (odd? ...)),  env E1
+    procedure P4: params (n),  body (if (= n 0) false (even? ...)),  env E1
+
+We can then invoke P2 with P3 and P4 as its arguments:
+
+    E2: EVEN? -> procedure P3,  ODD? -> procedure P4,  extends E1
+
+In this environment we evaluate <rest of body>.  Suppose it's a simple
+expression: (EVEN? X).  First we evaluate the subexpressions.  In E2 we
+find the binding EVEN? -> P3.  There's no binding for X in frame E2, but
+it extends E1, where we find X -> 5.  Now we invoke P3 by making a new
+environment:
+
+    E3: N -> 5, extends E1
+
+Note that E3 extends E1, not E2, because E1 is where P3 was created.
+
+With E3 as the current environment we evaluate the body of P3, which is
+
+    (if (= n 0) true (odd? (- n 1)))
+
+We easily evaluate (= N 0) and get the answer #F.  We then try to evaluate
+
+    (odd? (- n 1))
+
+But there is no binding for ODD? in E3, including the frames it extends.
+That's why LET instead of LETREC isn't sufficient.
+
+
+4.21
+
+We've actually seen this idea before, in the Extra for Experts in week 2.
+
+(a) FIB without DEFINE/LETREC
+
+((lambda (n)
+   ((lambda (fib) (fib fib n))
+    (lambda (fb k)
+      (if (< k 2)
+	  k
+	  (+ (fb fb (- k 1))
+	     (fb fb (- k 2)))))))
+ 10)
+
+
+(b) EVEN?/ODD? ditto
+
+(define (f x)
+  ((lambda (even? odd?)
+     (even? even? odd? x))
+   (lambda (ev? od? n)		; This is EVEN?
+     (if (= n 0) true (OD? EV? OD? (- N 1))))
+   (lambda (ev? od? n)		; This is ODD?
+     (if (= n 0) false (EV? EV? OD? (- N 1))))))
