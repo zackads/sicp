@@ -1,0 +1,12 @@
+User-agent: *
+Disallow: /images/
+Disallow: /roster/
+Disallow: /roster2/
+Disallow: /testphp/
+Disallow: /php_manual/
+Disallow: /postgres/
+Disallow: /manual/
+Disallow: /logs/
+Disallow: /cgi-bin/
+Disallow: /usr/local/apache2/manual	# added by kevinm 2/1/06
+Disallow: /~scheme

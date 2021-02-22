@@ -1,0 +1,49 @@
+REGROUP should generate procedures to rearrange the elements in a list
+according to a pattern.  Sample usage:
+
+   > (define pairup (regroup '((1 2) (3 4) ...)))
+
+(Yes you really type "..."!)  The argument to REGROUP is the result that you
+want your procedure to generate, supposing that its argument is the list
+(1 2 3 4 5 6 7 ...)
+
+   > (pairup '(the rain in spain stays mainly on the plain))
+   ((the rain) (in spain) (stays mainly) (on the))
+
+Note that PAIRUP handles odd-length argument lists appropriately.  More
+examples of patterns that REGROUP can handle:
+
+   > (define overlap (regroup '((1 2) (2 3) ...)))
+   > (overlap '(the rain in spain stays mainly on the plain))
+   ((the rain) (rain in) (in spain) (spain stays) (stays mainly)
+    (mainly on) (on the) (the plain))
+
+   > (define tails (regroup '((1 2 ...) (2 3 ...) ...)))
+   > (tails '(the rain in spain stays mainly on the plain))
+   ((the rain in spain stays mainly on the plain)
+    (rain in spain stays mainly on the plain)
+    (in spain stays mainly on the plain)
+    (spain stays mainly on the plain)
+    (stays mainly on the plain)
+    (mainly on the plain)
+    (on the plain)
+    (the plain)
+    (plain))
+
+   > (define swap (regroup '(2 1 4 3 ...)))
+   > (swap '(the rain in spain stays mainly on the plain))
+   (rain the spain in mainly stays the on)
+
+   > (define split (regroup '((1 3 ...) (2 4 ...))))
+   > (split '(the rain in spain stays mainly on the plain))
+   ((the in stays on plain) (rain spain mainly the))
+
+If you only give one example before an ellipsis, the recursion will cdr past
+the number of elements required to make one instance of the exemplified
+pattern.  If you give two examples, the recursion will cdr past the number of
+elements equal to the difference between the first numbers of the two
+examples.  (That's how OVERLAP works.)  For example,
+   > (define tails (regroup '((1 ...) ...)))
+is equivalent to the earlier version of TAILS.  If you use more than two
+examples, the differences must agree, or else your several examples will be
+taken as one big example that perhaps uses some list elements more than once.

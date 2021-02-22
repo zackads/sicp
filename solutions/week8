@@ -1,0 +1,157 @@
+CS 61A		Week 8 solutions
+
+LAB:
+
+1.  Add REPEAT to person class.
+
+(define-class (person name)
+  (INSTANCE-VARS (OLD-TEXT '()))
+  (method (say stuff)
+    (SET! OLD-TEXT STUFF)
+    stuff)
+  (method (ask stuff) (ask self 'say (se '(would you please) stuff)))
+  (method (greet) (ask self 'say (se '(hello my name is) name)))
+  (METHOD (REPEAT) OLD-TEXT))
+
+Notice that the ASK and GREET methods don't have to set old-text,
+because they use the SAY method.
+
+
+2. Which double-talkers work?
+
+(define-class (double-talker name)
+  (parent (person name))
+  (method (say stuff) (se (usual 'say stuff) (ask self 'repeat))) )
+
+There are two things wrong with this approach.  One is that it assumes
+that the two arguments to SE are evaluated left-to-right, since the
+use of REPEAT assumes that we've just said the new stuff.  That might
+work in some versions of Scheme but not in others.
+
+The second problem is that the value remembered in old-text will be
+a single copy of the argument, rather than two copies; therefore, if
+we ask this double-talker to repeat, it'll only say the thing once.
+
+
+(define-class (double-talker name)
+  (parent (person name))
+  (method (say stuff) (se stuff stuff)) )
+
+This would work except for the REPEAT feature.  We can ask a double-talker
+to ASK or to GREET and it will correctly say the right thing twice.  But
+if we ask this double-talker to REPEAT, it won't say anything at all,
+because it never remembered the stuff in old-text.
+
+
+(define-class (double-talker name)
+  (parent (person name))
+  (method (say stuff) (usual 'say (se stuff stuff))) )
+
+This one works as desired.
+
+
+
+
+HOMEWORK:
+
+1.  random number generator object
+
+(define-class (random-generator range)
+  (instance-vars (count 0))
+  (method (number)
+    (set! count (1+ count))
+    (random range) ))
+
+; We don't need to say (method (count) ...) because we automatically get a
+; method to examine each instance variable (and instantiate variable as well).
+
+
+2. Coke machine.
+
+(define-class (coke-machine size price)
+  (instance-vars (cokes 0) (money 0))
+  (method (deposit coin)
+    (set! money (+ money coin)) )
+  (method (coke)
+    (cond ((= cokes 0) (error "Machine empty"))
+	  ((< money price) (error "Not enough money"))
+	  (else (let ((change (- money price)))
+		  (set! money 0)
+		  (set! cokes (-1+ cokes))
+		  change )) ))
+  (method (fill number)
+    (let ((new (+ cokes number)))
+      (set! cokes (if (> new size) size new)))))
+
+
+3.  Deck of cards
+
+(define-class (deck)
+  (instance-vars (the-deck (shuffle ordered-deck)))
+  (method (deal)
+    (if (null? the-deck)
+	'()
+	(let ((top-card (car the-deck)))
+	  (set! the-deck (cdr the-deck))
+	  top-card)))
+  (method (empty?)
+    (null? the-deck)) )
+
+; I called the instance variable the-deck to avoid giving it the same name
+; as the class itself.
+
+
+4.  polite objects
+
+(define-class (miss-manners object)
+  (method (please message arg)
+    (ask object message arg)))
+
+; Note that the original object is not a parent of the miss-manners
+; object!  That would defeat the whole purpose, because the new object
+; would then respond to all the same messages as the old one.  We want
+; it to respond ONLY to the "please" message.
+
+; We simplified the problem by restricting it to messages with exactly
+; one argument, but of course we can generalize that with dot notation:
+
+(define-class (miss-manners object)
+  (method (please message . args)
+    (apply ask object messages args)))
+
+
+
+
+EXTRA FOR EXPERTS:
+
+Probably the easiest example to understand is one in which BOTH parents
+inherit from the same grandparent, like this:
+
+                                +------------+
+                                |   GP       |
+                                |            |
+                                | methods:   |
+                                |   A, B, C  |
+                                +------------+
+                                    /     \
+                                   /       \
+                                  /         \
+                       +------------+    +------------+
+                       |  Parent1   |    |  Parent2   |
+                       |            |    |            |
+                       | methods:   |    | methods:   |
+                       |   B, C     |    |   A, C     |
+                       +------------+    +------------+
+                                  \         /
+                                   \       /
+                                    \     /
+                                +------------+
+                                |   Child    |
+                                +------------+
+
+The methods in the classes Parent1 and Parent2 override more generic
+methods in the grandparent GP.  Suppose we ask an instance of the
+Child class to use method A.  Which method should it use?  Since the
+Parent1 class doesn't have its own method A, it inherits the GP method
+A, which is the most generic version.  Method A in the Parent2 class
+is more specific, so probably a better choice for the Child class.

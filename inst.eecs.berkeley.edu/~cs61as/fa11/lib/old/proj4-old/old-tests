@@ -1,0 +1,45 @@
+;;; Sanity Check Fall 2000
+;;; Sample test file
+;;; This file contains example tests. Add your own at the end of the
+;;; file, before the bye command. Be sure to include your results in
+;;; the test-results file. See the README for more info.
+
+; library files , berkeley.scm , etc
+ (load "/home/aa/projects/scheme/lib/stk/site-scheme/load-simply")
+
+(load "~cs61a/lib/obj.scm")
+(load "logo.scm")
+(load "logo-meta.scm")
+(initialize-logo)
+print sum 2 3
+print 2+3
+print sentence word "now "here last [the invisible man]
+print 2+1
+2+1
+print [hi there]
+print "hello
+print "a\+b
+print "+
+to factorial :n
+if :n=0 [output 1]
+output :n * factorial :n-1
+end
+print factorial 5
+print bf 104
+print bf bf 104
+print 7+bf 104
+print (sum 2 3 4)
+print (3 * 4) + 5
+make "foo 27
+print :foo
+to count :increase static :counter 2+3
+make "counter :counter + :increase
+print :counter
+end
+count 20
+count 1
+bye
+(exit)
+;;; End of tests
+
+

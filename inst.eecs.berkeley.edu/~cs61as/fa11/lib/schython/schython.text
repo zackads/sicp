@@ -1,0 +1,1936 @@
+CS61AS Programming Project #4: Schython
+
+>>> WARNING: This project is significantly longer than the previous
+projects and we strongly recommend that you start ASAP.
+
+================
+REVISION HISTORY
+================
+*Version 7: February 5, 2014*
+Fixed infinite loops regarding (READ-CHAR) and mutable objects in recursion.
+Fixed bugs in handling arithmetic operations.
+Fixed many other bugs.
+Changed use cases of EVAL-ITEM and HANDLE-INFIX.
+Added dictionaries to Schython.
+Added problems 8 and 9.
+
+*Version 6: August 3*
+3 is definitely not equal to 4.  Also, updated the specification for
+the "__contains__" method to be clearer, and fixed the example involving
+"range (3, 10, 2)", which was earlier "range (3, 2, 10)".  Added test cases
+for question 5.
+
+*Version 5: August 2*
+Fixed the description of the 'range' function.
+
+*Version 4: August 1*
+Removed the need to implement the AND? and IN? procedures; they are already
+present!  Also, the NEGATE-BOOL procedure is in the "py-primitives" Scheme
+file.
+
+*Version 3: July 31*
+Added test cases to questions 1, 2, and 3; clarified the GET-NUM procedure.
+
+*Version 2: July 30*
+Released part B; entire specification now available.  Typos fixed and
+comments added to part A.
+
+*Version 1: July 27*
+Initial version; released part A.
+
+============
+INTRODUCTION
+============
+In Chapter 4, we study a Scheme interpreter written in Scheme, the
+metacircular evaluator.  In this project, we modify that evaluator to
+turn it into an interpreter for a different programming language --
+Python.
+
+This project is valuable for several reasons:
+
+*  It will make you more familiar with the structure of the
+   metacircular evaluator, because you will have to understand which
+   procedure to modify in order to change some aspect of its
+   operation.
+*  Working with another language may help overcome some of the
+   confusion that students often have about working in two different
+   versions of Scheme at once.  In this project, it will be quite
+   obvious when you are talking to Scheme and when you are talking to
+   Python.
+*  This project will encourage you to think about the design of a
+   programming language.  Why did Scheme's designers and Python's
+   designers make different choices?
+*  We hope that this project will encourage you to create your own
+   language with its own syntax!  One of the beautiful aspects of
+   computer science is that if there isn't a tool or a language that
+   satisfies your requirements, you can make your own!
+
+As in the Adventure Game project, you will be in a group of two
+people, person A and person B.  Before going ahead with the rest of
+the specification, pick one person to be person A and the other to be
+person B.  This project has more common questions than separate
+questions, so you will be spending more time coding together than
+coding separately.  However, the parts that you will be coding
+separately are similar in content and task, and are essentially
+present to achieve twice as many features in the same amount of time.
+
+We have provided a very basic implementation of Schython, our
+Python-in-Scheme interpreter.  As you progress through the project,
+you will be adding more features to Schython to bring it as close to
+regular Python as possible.  However, you will only be able to
+implement a small subset of all of the features of regular Python in
+the short period of two weeks.
+
+Please start early on this project! There is a *lot* of reading that
+you must do before you can start coding, so you need not have to be at
+a computer when you start the project.  We suggest reading through the
+project at least once before starting the project.
+
+Section titles labeled with a star (*) contain exercises to be
+completed.
+
+IMPORTANT: You will need to turn in a copy of transcripts indicating that you have
+ran and tested your project.
+
+======================
+INTRODUCTION TO PYTHON
+======================
+Python was implemented in 1989 by Guido Van Rossum in the Netherlands.
+It is a high-level computer programming language that has gained a
+large (and steadily growing) following in the past decade.  One of its
+main advantages over other languages is its dedication to clear syntax
+and readable code: the Python community aims to ensure that
+programmers do not have to type a lot of extra unnecessary
+words/symbols to get their tasks done.  Let's try it out!
+
+At a command prompt, open a Python interpreter with the command
+"python".  (The most recent version of Python is 3.0, but we will be
+implementing features from Python 2.6.4.)  You should see the Python
+interpreter prompt:
+
+     >>>
+
+How would you ask Python to print "Hello World"?  Well,
+
+     >>> print "Hello World"
+     Hello World
+
+and that's it!  (Yeah, srsly.)  As you may have noticed from that
+simple example, Python does not need left parentheses to call
+functions; you do not need to precede 'print' with a left parenthesis.
+Python is case-sensitive, so "PRINT" would not work.
+
+Another key difference is that Python only supports infix operators,
+where the operator is present between its operands:
+
+     >>> print 2 + 2
+     4
+
+You don't actually need the 'print' statement; the interpreter
+automatically evaluates whatever is typed at the prompt, using a
+Read-Eval-Print loop that is very similar to that used in the
+metacircular evaluator (We'll explore this two sections from now.)
+For example:
+
+     >>> 2 + 2
+     4
+
+Assignments in Python are similar to assignments in other languages.
+If, for example, you would like to provide a value to a variable
+called 'x':
+
+     >>> x = 2
+     >>> print x
+     2
+
+In contrast to Scheme, Python makes no distinction between DEFINE and
+SET!.  If a variable 'x' is not already present, the above assignment
+creates a new variable 'x' in the global environment; otherwise, any
+previous value of 'x' is overwritten.
+
+An important aspect of Python, born of its dedication to readable
+code, is its usage of INDENTATION.  In most other languages, including
+Scheme, indentation is not an issue, since these languages ignore the
+number of spaces, and instead use spaces to delimit symbols, numbers
+and words.  However, in Python, the number of spaces at the beginning
+of a line is important.
+
+     >>> x = 2
+     >>> if x == 1:
+     ...   x = x + 1
+     ...   print x
+
+(You will have to press the ENTER key once more at the "..." prompt
+that will show immediately after, to signify that you are done with
+the 'if'-statement.)
+
+The 'if'-statement in Python works the same as its equivalent in
+Scheme: if the condition of the 'if'-statement is satisfied, then the
+body is evaluated.  Notice that we have used '==' instead of '=':
+since the '=' character is already used for assignment, we use '==' to
+check for equality.  Notice also that the body is indented: all
+statements in the body need to begin with the same indentation.  As a
+result, the following would not work:
+
+     >>> x = 2
+     >>> if x > 1:
+     ...   x = x + 1
+     ...    print x
+
+because the second statement in the body is indented more than the
+first statement.  Similarly, the following would not work:
+
+     >>> x = 2
+     >>> if x > 1:
+     ...    x = x + 1
+     ...   print x
+
+because the second statement in the body is indented less than the
+first statement.  In general, you would only DEDENT when you are done
+with a set of related statements, or a BLOCK.  All statements in a
+block need to be indented with the same number of spaces.  As a
+further example, an 'if'-statement can also have an 'else'-clause,
+which is evaluated if the condition is not satisfied.
+
+     >>> x = 2
+     >>> if x > 1:
+     ...   x = x + 1
+     ...   print x
+     ... else:
+     ...    x = x - 1
+     ...    print x
+
+Notice that the lines inside the blocks corresponding to the
+'if'-statement and its 'else'-clause are indented the same amount, but
+the blocks themselves are indented by different amounts (though they
+don't have to be!).  The 'if'-statement and the 'else'-clause,
+however, need to be indented by the same amount because they belong to
+the same statement.  However, *all statements that are not part of a
+block or sub-block of statements should have no indentation*.  Try the
+following statement (which has an indentation of two spaces after ">>>
+") at the Python interpreter prompt:
+
+     >>>   2 + 3
+
+Indentation enforces clean code, but can take a while to get used to;
+the key thing to remember is that you only need to indent when you are
+starting a new block of statements.
+
+Python also has FUNCTIONS, its analog to Scheme's procedures.  The
+following defines the 'square' function:
+
+     >>> def square(x):
+     ...   return x * x
+
+(Again, you will have to press the ENTER key once more at the "..."
+prompt that will show immediately after, to signify that you are done
+with the procedure body.)
+
+This syntax is similar to C-like languages, where the arguments to the
+function are enclosed between parentheses and present immediately
+after the name of the function.  To call the function:
+
+     >>> square(3)
+     9
+
+In this sense, the left parenthesis can be considered an infix
+operator, where the operator is between its operands.  To see why this
+is the case, recall that in Scheme, the left parenthesis can be
+considered as a prefix operator, which "calls" its first argument on
+the subsequent arguments.  Similarly, in Python, the left parenthesis
+"calls" its first argument ('square') on the next argument ('3').
+
+Also, if Python procedures need to return values, we have to
+explicitly add a 'return'-statement to the body to return the answer;
+by contrast, in Scheme, the very last line of a procedure definition
+is always returned.  This allows us to distinguish between Python
+functions that return values, and Python functions that do not return
+values but are used primarily for their side-effects:
+
+     >>> def foo():
+     ...   print "Hello World"
+
+Python has lists!  (Why wouldn't it?)
+
+     >>> x = [1, 2, 3]
+
+"x" is now a variable that stores a list of three numbers.  As you can
+guess, the Scheme analog is "(list 1 2 3)".  Python lists can also be
+deep:
+
+     >>> x = [[1, 2, 3], 2, 3]
+
+Unfortunately, we can't CAR or CDR down a Python list.  To access
+particular elements of a list:
+
+     >>> x[1]
+     2
+
+The notation "x[1]" returns the second element of the list (Python
+uses zero-based counting).  Again, in this case, the "[" character can
+be considered an infix operator.
+
+Finally, we can also load Python files using 'import'.  If, say, we
+need to load the Python file "foo.py", we use the command:
+
+     >>> import foo
+
+We will explore more features of Python as we implement features in
+Schython.  If you need to exit Python, you can do so by typing
+'quit()' at the prompt or pressing Ctrl+D.
+
+===============
+GETTING STARTED
+===============
+The version of Python most widely used is written in C, but there are
+other popular versions written in Java, in C#, in Chinese (!), and
+yes, in Python itself.  Our version will be written in a language that
+you already know (and maybe love): Scheme.
+
+You should have the following files to run and code Schython:
+
+     obj.scm
+     parser.scm
+     py-meta.scm
+     py-primitives.scm
+     primitives.py
+     start.scm
+
+A note about the syntax of this specification: all capitalized words
+are either new terms or Scheme procedures and all words between
+single-quotes are to be typed in Python.  Assume correct syntax; you
+are welcome to throw errors using the PY-ERROR procedure if you would
+like, but it is not required.
+
+To start Schython, you would load the "start" Scheme file into the
+STk interpreter:
+(If you're using emacs, make sure to read the comments inside start.scm to
+get it working when running the file from within emacs).
+
+     STk> (load "start")
+     >>>
+
+The Python interpreter prompt should show up.  The INITIALIZE-PYTHON
+procedure sets up the global environment and the primitives necessary
+for a basic version of Schython to run.  You should be able to perform
+basic arithmetic and simple assignments.
+
+At the top of the "py-meta" Scheme file, we have included a
+**DEBUGGING** flag.  If it is set to true, then all errors will dump
+you back into Scheme; if it is set to false, then all errors will be
+hidden, but PY-ERROR invocations will still print an error message and
+return you back to Python.  The error-handling in Schython has a few
+rough edges: though we have tried to catch most errors in your
+Schython instructions and print appropriate Python-like errors, some
+errors could potentially dump you back into Scheme.  If this happens,
+type
+
+     STk> (driver-loop)
+
+to return to Schython.  You should only use (initialize-python) once,
+or else you will lose any Schython variables or procedures you have
+defined.
+
+>>> NOTE TO MACINTOSH GAMBIT USERS: Before running this project you
+must tell Gambit to read a line, not a Scheme expression, in response
+to the ENTER key.  To do this, look in the Edit menu and select Window
+Styles.  Near the bottom right corner of the window that will appear
+are three check boxes; the middle one is labelled "Enter = Send Line".
+Check that box (so that you see an X in the box), then click OK.
+
+>>> NOTE TO WINDOWS USERS: If the INITIALIZE-PYTHON procedure causes
+an infinite loop, then your computer does not understand
+UNIX-based newline characters.  We don't see any workaround for
+this problem, so we suggest that you work on the lab computers,
+such as either STAR or NOVA.
+
+====================
+READ-EVAL-PRINT LOOP
+====================
+We will build the Schython interpreter upon the environment model
+framework that we constructed for the metacircular evaluator; in other
+words, we will be able to extend environments, add bindings to frames,
+and find the value corresponding to a variable in a frame, among other
+things.
+
+The heart of the Schython interpreter is the Read-Eval-Print Loop
+(REPL), which is very similar to the Read-Eval-Print Loop in the
+metacircular evaluator.  In the metacircular evaluator, the
+driver-loop
+
+     (define (driver-loop)
+       (prompt-for-input input-prompt)
+       (let ((input (read)))
+         (let ((output (mc-eval input the-global-environment)))
+           (announce-output output-prompt)
+           (user-print output)))
+     (driver-loop))
+
+*reads* input from the user, *evaluates* it in the global
+environment, and then *prints* the output, and it does so
+infinitely.  Similarly, in the Schython interpreter, the
+(simplified) driver-loop
+
+     (define (driver-loop)
+       (define (repl)
+       (prompt ">>> ")
+       ...
+         (let ((line-obj (make-line-obj (py-read))))
+           ...
+           (begin (py-print (eval-line line-obj the-global-environment))
+                  (repl))))))
+      ...)
+
+*reads* input from the user, *evaluates* it in the global environment,
+and then *prints* the output, and it does so infinitely as well.
+There are significant differences, however, in reading and evaluating
+input: differences that we will need to explore in the project.
+
+=============
+THE TOKENIZER
+=============
+One main difference in the REPL, as you may have noticed, is that the
+input is read using the PY-READ procedure, and not the standard Scheme
+READ or READ-LINE procedures.  This is because of the syntax
+differences between Scheme and Python: Scheme expressions are very
+simple, and are already in the form of either self-evaluating
+expressions or lists, where each TOKEN (numbers, words, and symbols)
+is separated by spaces.  This is why READ directly returns a list that
+we can evaluate straightaway using MC-EVAL.  However, Python
+expressions need to be TOKENIZED (or LEXED) for several reasons:
+
+*  In Scheme, the expression "a+3" will be considered as ONE token,
+   since Scheme tokens are considered to be separated by spaces.  For
+   example, in the procedure
+
+     (define (a+3 a)
+       (+ a 3))
+
+we want a procedure named "a+3"; we don't want to evaluate "a + 3".
+In Python, however, we do not have this luxury: we need to read each
+character and decide that 'a', '+', and '3' are THREE separate tokens,
+since 'a+3' is a valid Python expression that increments the variable
+"a" by 3.  In other words, we cannot rely on spaces separating tokens;
+we need to go to each character (and sometimes, the character just
+ahead) and decide where one token starts and another begins.  (The New
+Oxford American Dictionary defines a TOKEN as 'the smallest meaningful
+unit of information in a sequence of data for a compiler'.)
+
+*  Since Python depends significantly on indentation, we need to count
+   the number of spaces at the beginning of each line, and check that
+   lines have been properly indented.  Again, we will need to go to
+   each character and determine the indentation of each line.
+
+The tokenizing procedure for Schython is called PY-READ and is located
+in the "parser.scm" Scheme file.  The PY-READ procedure reads
+characters at the Schython prompt using (among other things) the
+READ-CHAR procedure, and returns a list of the corresponding tokens,
+prefixed with the number of spaces in the indentation.  For instance,
+if PY-READ reads "if a == 3:" at the Schython prompt, it will return
+the *Scheme* list "(0 if a == 3 :)", where the 0 denotes that the line
+was not indented at all (or was indented by 0 characters).  Since the
+PY-READ procedure eventually returns a SCHEME list (which will
+eventually be evaluated in the underlying Scheme), special Scheme
+characters such as parentheses and commas are distinguished using
+pipes, so "(a + b) * 3" becomes the Scheme list "(0 |(| a + b |)| *
+3)".
+
+========================
+THE GET-TOKENS PROCEDURE
+========================
+The main workhorse of the PY-READ procedure is the internal GET-TOKENS
+procedure, which reads characters and groups them into tokens.  It
+uses the PEEK-CHAR procedure to look at the next character typed at
+the Schython prompt *without processing (or "eating") it*, so that the
+character can be used again; this is different from the READ-CHAR
+procedure, which reads the next character and processes (or "eats")
+it.  Think about why this is useful: suppose you were provided the
+characters that are typed at the Schython prompt.  As you work your
+way through the prompt, you will have to look ahead one character to
+determine if the current token ends and another one begins.  (If you
+take a class in Compilers, you will be told this is an example of a
+"LALR(1)-parser": LookAhead by 1 character, going from Left to Right.)
+Both the PEEK-CHAR and READ-CHAR procedures return characters.
+The GET-TOKENS procedure uses the CHAR->SYMBOL procedure to convert
+a character to a Scheme symbol, the WORD procedure to combine Scheme
+symbols into one token, and the CONS procedure to stick the tokens
+into a list.
+
+Notice that we are making a distinction between *characters*, which
+the READ-CHAR and PEEK-CHAR procedures read from the user at the
+prompt, and Scheme *symbols*, which are the numbers and words that
+Scheme understands.  We need to convert characters from the prompt
+into Scheme symbols, because we will eventually be constructing a
+Scheme list that will be evaluated in a Scheme procedure.  Characters in
+Scheme are represented as #\<char>, so the character "a" would be
+represented as "#\a", without the quotes, in Scheme.
+
+The GET-TOKENS procedure will keep reading characters until one of two
+conditions are satisfied:
+
+1.  We have reached the end of a line, and all parentheses, braces,
+and brackets have been properly closed.  If there is at least one open
+parenthesis, brace, or bracket, then the end of a line is ignored and
+the procedure keeps reading characters.  The end of a line is
+represented by the character #\newline.
+
+2.  We have reached the end of a file, if we are reading from a file.
+Every file ends with an EOF character (Ctrl+D) that responds with #t
+to the in-built Scheme predicate EOF-OBJECT?.
+
+If any one of these two conditions are satisfied, then the GET-TOKENS
+procedure returns the final Scheme list of tokens that it has
+collected.  This brings us to one final note about the GET-TOKENS
+procedure: it has an extra argument called BRACES, which keeps track of
+open parentheses, braces, or brackets that it has seen; this is how
+the procedure knows whether or not there is a dangling parenthesis,
+brace, or bracket.
+
+=========================
+AUGMENTING THE TOKENIZER*
+=========================
+We have written a lot of the tokenizer for you already, so you can
+look at our code to get a better idea of how a tokenizer works.
+However, we do not yet have support for either real numbers, strings,
+indentation, or comments, and this is where you come in.  This section
+has two common questions, followed by one question to be separately
+but in parallel.  At the end of this section, both partners will
+combine code and proceed to the next section.
+
+You can test the PY-READ procedure, once you have loaded the
+"py-meta.scm" Scheme file, as follows:
+
+     STk> (py-read)x = 3
+     (0 x = 3)
+
+     STk> (py-read)  if a == 3:
+     (0 if a == 3 :)
+
+     STk> (py-read)(3+4)
+     (0 |(| 3 + 4 |)|)
+
+Yes, the second example should have an indentation of two, not zero.
+You will be fixing that in the second exercise below.
+
+The following exercises should be completed in the "parser" Scheme file.
+
+*** COMMON EXERCISES ***
+
+1.  (*) In Python, one-line comments are preceded with the #-character
+(the equivalent in Scheme is the ;-symbol).  Currently, the
+tokenizer does not understand Python comments: if you were to type
+
+     >>> if a == 3: # This should be ignored
+
+at the Schython prompt, you would obtain the Scheme list
+
+     (0 if a == 3 : |#| this should be ignored).
+
+We do not want the comment in the final Scheme list, because we do not
+want it to be EVAL'd.  We have provided a stub for a procedure called
+IGNORE-COMMENT that is local to the PY-READ procedure: currently, it
+returns an error.
+
+Fill in the body for the IGNORE-COMMENT procedure, so that it keeps
+reading characters at the Schython prompt (using the READ-CHAR
+procedure) until it either sees a newline character (#\newline) or the
+end of a file, at which point it returns the word *COMMENT-IGNORED*.
+You may find it useful to define a helper procedure that reads a
+character and decides whether to stop reading characters, or
+whether to call itself recursively; this approach will also provide a
+template for future procedures.  You will also find the EOF-OBJECT?
+Scheme predicate useful to detect the end of a file.
+
+Once you are done with the IGNORE-COMMENT procedure, observe the
+following COND-clause in the body of GET-TOKENS:
+
+     ((eq? char #\#) (ignore-comment) '())
+
+Notice that this COND-clause calls your procedure once it locates a
+#-character, and ignores its return value, returning an empty Scheme
+list instead.  Nonetheless, the IGNORE-COMMENT procedure should still
+return *COMMENT-IGNORED* since all Scheme procedures need to return a
+value.
+
+Test your IGNORE-COMMENT procedure by providing different test cases
+to the PY-READ procedure.  For example:
+
+     STk> (py-read)x = 3 # I am a comment IGNORE ME
+     (0 x = 3)
+
+     STk> (py-read)x = 3 # Om # nom # nom
+     (0 x = 3)
+
+These test cases are not exhaustive, however.
+
+2.  (*) The PY-READ procedure does not call the internal GET-TOKENS
+procedure directly; instead, it calls the GET-INDENT-AND-TOKENS
+procedure first, which counts how many spaces are present at the
+beginning of a line.  As soon as the GET-INDENT-AND-TOKENS procedure
+sees a non-space character, it calls the GET-TOKENS procedure to begin
+collecting tokens into a Scheme list.  It then prepends this list with
+the indentation.
+
+However, as we have noted above, the current version of
+GET-INDENT-AND-TOKENS does not actually count the number of spaces
+present at the beginning of a line: it calls GET-TOKENS immediately
+and prepends 0 to the resulting list.  Fix the GET-INDENT-AND-TOKENS
+procedure.
+
+Potentially helpful notes:
+
+*  You will find the PEEK-CHAR and the READ-CHAR procedures helpful.
+*  You may also find it useful to use a helper procedure that keeps
+   track of the current indentation.
+*  The space character is denoted as "#\space" in Scheme (without the
+   quotes).
+
+Again, test your GET-INDENT-AND-TOKENS procedure by providing
+different test cases to the PY-READ procedure.  For example:
+
+     STk> (py-read)x = 3
+     (0 x = 3)
+
+     STk> (py-read) x = 3
+     (1 x = 3)
+
+     STk> (py-read)   x = 3
+     (3 x = 3)
+
+The following exercise should be done separately.  After both partners
+have finished coding (and testing!) their answers, combine both
+answers.
+
+*** PERSON A ***
+
+A3.  (*) In the Adventure Game project, we used strings in Scheme to
+display sentences that needed to be case sensitive; strings are essentially
+collections of characters.  Scheme strings are made of *characters*, not
+Scheme symbols.  Python also has string support, but Schython does not.
+In this exercise, we will implement basic string support in Schython.
+
+In Python, strings can be delimited either with double-quotes or
+single-quotes.  However, if we use a double-quote to start a string,
+we need to use a double-quote to end the string; any single-quotes
+will be considered part of the string.  The case is similar if we use
+a single-quote to start a string.  So, for instance,
+
+     "This is a string"
+
+is a Python string, and so is the entirety of
+
+     'Is this a "string"?  Why, yes it is.'
+
+The GET-TOKENS procedure calls a GET-STRING helper procedure whenever
+it sees a double-quote or a single-quote; it calls the GET-STRING
+procedure with the quote as an argument.  The GET-STRING procedure
+should collect all of the characters that constitute the string
+(*excluding* the delimiting quotes!) into a list.  The resultant list
+of CHARACTERS (not SYMBOLS) is then passed to the LIST->STRING
+procedure, which converts the list into a string token.  We need the
+list to be of characters, not symbols, because a string is made of
+characters.
+
+However, the version of GET-STRING provided does not collect the
+characters of the string: it merely returns an error.  Fix the GET-STRING
+procedure so that it collects all of the characters of the string into
+a list.  Remember, you will only stop collecting the characters of the
+string when you see a quote character that matches the starting quote;
+this is where the initial argument to the GET-STRING procedure should
+prove handy.
+
+Test your GET-STRING procedure by feeding the following inputs to the
+PY-READ procedure:
+
+     STk> (py-read) print "Hello 'world'."
+     (1 print "Hello 'world'.")
+
+     STk> (py-read) print 'Hello 'world'.'
+     (1 print "Hello " world ".")
+
+("Hello ", world, and "." are three different tokens.)
+
+     STk> (py-read) print 'Hello "world".'
+     (1 print "Hello \"world\".")
+
+In the responses to the above test cases, the double-quotes signify
+the start and the end of the Scheme string (no matter if the original Python
+string was delimited by single- or double-quotes).  The \" symbol refers
+to a double-quote that is *inside* a string, and helps to distinguish it
+from double-quotes that delimit the string.  You need not worry about
+these double-quotes though; you need only be concerned with the contents
+of the string.
+
+
+*** PERSON B ***
+
+B3.  (*) The basic code framework that we have provided is able to
+handle and tokenize integers.  The GET-TOKENS procedure calls the
+GET-NUM helper procedure that returns a word representing a number,
+such as the words 314 and "012".  It stops reading characters as soon
+as it peeks ahead and sees either an operator, a space, or a special
+Python symbol.  However, we are unable to tokenize real numbers with a
+decimal part, such as "3.14159".  Currently, if the GET-NUM helper
+procedure sees a #\. character, it assumes that the user created a
+syntactically incorrect number and returns an error instead.
+
+Improve the GET-NUM procedure so that the tokenizer also understands
+real numbers with a decimal part; in other words, the GET-NUM
+procedure should keep collecting SYMBOLS (not CHARACTERS) to construct
+a number even if it sees a #\. character.  (Use the CHAR->SYMBOL
+procedure that we provide to convert the characters returned by
+READ-CHAR or PEEK-CHAR into the corresponding Scheme symbols.)
+
+However, you also need to take into consideration inputs such as
+'3.1415.foo', with multiple dot-symbols; in this case, the GET-NUM
+procedure should only return the number "3.1415".  (Do not throw an
+error!  We will soon see why this syntax can work.)  One way to do
+this is to maintain a Boolean (#t/#f) flag, which is true if a
+#\. character has already been seen, and false otherwise.  You can
+either attach this flag as an argument to the GET-NUM procedure, or as
+an argument to a helper procedure.  You will find the CHAR-NUMERIC?
+predicate useful: it returns #t if the character provided is a number.
+
+Test your GET-NUM procedure by feeding the following inputs to the
+PY-READ procedure:
+
+     STk> (py-read) print 3.14.foo
+     (1 print 3.14 .foo)
+
+     STk> (py-read) print 3.14
+     (1 print 3.14)
+
+     STk> (py-read) print 3.14 + 5.15
+     (1 print 3.14 + 5.15)
+
+*** COMBINE WORK NOW ***
+
+At this point, both partners should have code that successfully
+manages to tokenize strings and real numbers, to ignore comments, and
+also to prepend the correct indentation to the lists returned by the
+GET-TOKENS procedure.
+
+
+==================
+THE LINE-OBJ CLASS
+==================
+Phew.  We're done with reading input from the user and converting it
+into separate, usable tokens.  *All tokens are now either Scheme
+symbols or Scheme strings.* Now, we actually have to evaluate these
+tokens.  Looking back at the REPL for the Scheme interpreter, we
+notice the following line:
+
+     (let ((line-obj (make-line-obj (py-read))))
+
+We invoke the MAKE-LINE-OBJ procedure, which takes in the list of
+tokens returned by PY-READ, and creates an object of the LINE-OBJ
+class, defined near the top of the "parser.scm" Scheme file.  A
+LINE-OBJ object is instantiated with a list of tokens (and the
+indentation of this list), and produces what is essentially the
+corresponding "interactive" list of tokens, that allows you to process
+through the list.  Every LINE-OBJ object accepts the following
+messages:
+
+    EMPTY?         Is the line of tokens empty?
+    EXIT?          Is the line a command to exit?  ("exit()" or
+                   "quit()")
+    PEEK           What is the next token in the line of tokens?
+    PUSH <token>   Push the token to the front of the line of tokens.
+    NEXT           Return the next token in the line of tokens.
+
+PEEK and NEXT are analogous to PEEK-CHAR and READ-CHAR: the former
+message returns the token at the front of the line of tokens, while
+the latter message returns *and removes* the token.
+
+We need the LINE-OBJ class essentially because Python has infix
+operators.  This is not a problem in Scheme because all operators are
+prefix operators: the operation you need to perform always occurs
+*before* the arguments you need to perform it on (for example, (+ 2
+3)).  However, in Python, we have statements such as "2 + 3", where we
+have to remove the first token (2) before we realize that we have to
+add it to the second token (3).  We could potentially CDR down the
+list of tokens, but this approach gets particularly tricky for
+statements like "square(3 + 4) * 2", where we have to know to evaluate
+"3 + 4" before calling the SQUARE function.  The LINE-OBJ class also
+provides a clean interface that allows us to easily remove from, peek
+at, and add to a list of tokens, without worrying about the underlying
+details.  You will see a fair amount of LINE-OBJ instances sprinkled
+throughout the Schython interpreter code.
+
+=============
+THE EVALUATOR
+=============
+Looking further at the REPL, we see the following call to the
+EVAL-LINE and PY-PRINT procedures:
+
+     (py-print (eval-line line-obj the-global-environment))
+
+The EVAL-LINE procedure, as you can guess, evaluates the line of
+tokens (wrapped in a LINE-OBJ object, which we will herein call "line
+object").  It produces an answer that will be printed by the PY-PRINT
+procedure.  At a high level of abstraction, this is all we need to
+know.
+
+However, since we need to modify the EVAL-LINE procedure for this
+project, we look further at its definition.  The EVAL-LINE procedure performs
+basic error checks: it evaluates the line using the PY-EVAL workhorse
+procedure, but only if the line of tokens is not empty, has zero
+indentation, and has only one Schython statement.  Essentially, the
+EVAL-LINE procedure ensures that the PY-EVAL procedure receives input
+that is free of common syntactic errors.
+
+The PY-EVAL adds two more procedures to this call hierarchy: EVAL-ITEM
+and HANDLE-INFIX.  The structure of the EVAL-ITEM procedure is very
+similar to that of the MC-EVAL procedure in the metacircular
+evaluator: we look at the first token and check for certain keywords;
+based on the keyword, we decide what needs to be returned.  Because of
+the infix nature of Python, EVAL-ITEM processes as many tokens that
+constitute the "first operand" of an infix operator as it needs to.
+Once done, EVAL-ITEM returns its output to HANDLE-INFIX.  At this
+point, if the line object is not empty, then the first token in the
+line object *may* be an infix operator: if it is, HANDLE-INFIX uses
+PY-EVAL (or EVAL-ITEM) again to evaluate the rest of the line object
+(or the next item) after the infix operator, and then combines the
+"left" and the "right" operands of the infix operator to return the
+final result.
+
+To summarize, the EVAL-LINE procedure calls PY-EVAL with a line object
+that is free of common (though certainly not all!) syntactic errors.
+PY-EVAL then uses EVAL-ITEM to evaluate the first ("left") operand of
+an infix operator, if need be, and passes the result to HANDLE-INFIX.
+If there is indeed an infix operator in the line object, HANDLE-INFIX
+uses either PY-EVAL or EVAL-ITEM again to evaluate the second
+("right") operand, and then combines the results.  As their names
+imply, EVAL-ITEM evaluates the next "item" in the line object, while
+PY-EVAL evaluates an entire line object.
+
+Look at the code further to familiarize yourself with this call
+hierarchy.  Notice how the line object is constantly passed between
+all of these procedures.  Since the line object maintains state, it is
+important to remember what is (or could be) on a line object at any
+given point of the evaluator.
+
+================
+THE PY-OBJ CLASS
+================
+What does the EVAL-ITEM procedure return?  It returns an instance of
+the PY-OBJ class, or one of its subclasses, as defined in the
+"py-primitives" Scheme file.  Every "type" of data supported by
+Schython has a corresponding subclass of the PY-OBJ class: primitive
+procedures (PY-PRIMITIVE), user-defined procedures (PY-PROC), strings
+(PY-STRING), integers (PY-INT), real numbers (or "floats") (PY-FLOAT),
+Booleans (PY-BOOL), and lists (PY-LIST).  If we detect a number in
+EVAL-ITEM, for example, we create a PY-NUM object that "wraps" around
+the number and is able to respond to messages such as NUMBER?,
+PROCEDURE? and VAL, among many other messages.
+
+Why do we do this?  Solely to mimic the behavior of Python, where
+*everything is an object*, even numbers and strings.  For example,
+when Python sees the statement
+
+     >>> a = 3.5 + 4
+
+it internally converts it to the equivalent statement
+
+     >>> a = 3.5.__add__(4)
+
+(Try this out in regular Python!)  Here, the number "3.5" has been
+converted into an object, which understands the method '__add__'.  The
+equivalent in OOP-Scheme would be the statement "(ask 3 __add__ 4)",
+although this doesn't quite work in Scheme because 3.5 is a number,
+not an object.  We have to "wrap" the number 3.5 in a PY-INT object so
+that it can understand the '__add__' method.  (By the way, this is why,
+in question B3, we asked you not to consider '3.14159.foo' as an error;
+this implies that you are calling a procedure called 'foo' on the
+number 3.14159.
+
+This proves useful when the infix operator can mean more than one
+thing.  For example, when you add two numbers, the "+" operator does
+regular arithmetic addition; when you add two *strings*, the "+"
+operator concatenates them:
+
+     >>> a = "foo" + "bar"
+     foobar
+
+Since Python internally converts the statement to the equivalent
+
+     >>> a = "foo".__add__("bar")
+
+all we need to do is ensure that numbers and strings respond
+differently to the '__add__' method.  A note on convention: The
+methods equivalent to arithmetic operators begin and end with double
+underscores.  So, for instance, the "*" operator is equivalent to the
+'__mul__' method.  Strings can be multiplied as well, because they
+provide a '__mul__' method.
+
+     >>> print 3 * 4
+     12
+
+     >>> print "foo" * 4
+     foofoofoofoo
+
+The main idea is that *everything in Python is an object*.  For
+example, numbers are "wrapped" in PY-NUM objects, strings are
+"wrapped" in PY-STRING objects, and booleans are "wrapped" in PY-BOOL
+objects.  As we have seen above, this allows us to simplify our code
+significantly, even with the extra difficulties introduced by infix
+operators.  In the "py-primitives" Scheme file, we have provided
+helper constructors, such as MAKE-PY-STRING, MAKE-PY-BOOL, and
+MAKE-PY-INT (among others) that create these objects for you.  We have
+also provided two global true and false PY-BOOL objects, known as
+*PY-TRUE* and *PY-FALSE* respectively, accessible from any file in
+the project.
+
+An important note about Schython: in general, the methods of the PY-OBJ
+class and its subclasses return instances of either the PY-OBJ class or
+one of its subclasses.  The only exceptions to these are:
+
+*  "Predicate" methods -- methods that end with the "?"-character,
+   such as 'true?' -- which return the *Scheme* booleans #t and #f,
+*  The 'type' method, which returns a *Scheme* word: the type of the
+   PY-OBJ instance, and
+*  The 'val' method, which returns the Scheme value wrapped in the
+   PY-OBJ instance.
+
+These exceptions are necessary for Python objects to interact with
+Scheme objects and primitives.
+
+Finally, we talk about Python's 'None' object, which has no equivalent
+in Scheme.  Python has a 'None' object, which is returned by a function
+when the function has no value to return.  This is useful in cases where
+a procedure returns a value in some cases, but in other cases, the
+function is unable to return anything; however, to maintain consistency,
+the function returns 'None' in such cases.  For example,
+
+     >>> def foo(bar):
+	 ...   if bar > 0:
+	 ...     return factorial(bar)
+	 ...   else:
+	 ...     return None
+
+In the above example, the 'foo' function returns the factorial of a
+positive number, but if the number provided is not positive, 'foo'
+returns 'None'.  As a result, the 'foo' function returns something no
+matter what its input.  In the "py-primitives" Scheme file, we have
+defined a NONE class to represent the 'None' object; the NONE class
+is a subclass of the PY-OBJ class.  We have also defined a global object
+called *NONE*, which is an instance of the NONE class.
+
+Let's do an exercise to solidify our understanding of the PY-OBJ class
+and its subclasses.  The following exercises should be done
+separately.  After both partners have finished coding (and testing!)
+their answers, combine both answers.
+
+*** PERSON A ***
+
+A4.  (**) Implement the '__contains__' method in the PY-LIST class,
+stored in the "py-primitives" Scheme file.  This method takes in a
+PY-OBJ object as argument; it determines if the Scheme list wrapped by
+this PY-LIST object "contains" the argument PY-OBJ object.
+We test for containtment by checking if any of these elements
+are "equal" to the argument PY-OBJ object.
+
+Potentially helpful notes:
+
+*  PY-LIST objects return the contained Scheme list through the
+   method 'val'.
+*  We provide an example of how to check if one PY-OBJ object ("obj")
+   is "equal" to another ("other"):
+
+     (ask (py-apply (ask obj '__eq__) (list other)) 'true?)
+*  __contains__ returns a python boolean, not a scheme boolean
+   You may find the global true and false PY-BOOL objects, known as
+   *PY-TRUE* and *PY-FALSE* respectively.
+
+
+We send the '__eq__' message to "obj" and receive a PY-PRIMITIVE, a
+"Python primitive function" that expects another PY-OBJ object as
+argument and determines if "obj" is equal to the argument object.
+Much like in MC-APPLY, we use the PY-APPLY procedure to apply this
+PY-PRIMITIVE onto a list of its arguments, which here contains only
+the argument object.  We receive a PY-BOOL object as an argument and
+ask if it is a true-valued PY-BOOL object.  You have to use
+higher-order functions and/or recursion to implement this check for
+each element of a list of PY-OBJ objects.
+
+*  As a note on convention, we use the '__eq__' message because
+
+     >> 3 == 4
+     False
+
+translates to the equivalent
+
+     >> (3).__eq__(4)
+     False
+
+You will be able to completely test your '__contains__' method after
+question B5.  For now, you can always create, in Scheme, a Python list
+and a Python number, and determine if the Python number is an element
+of the Python list.  For example,
+
+     STk> (define test-num-1 (make-py-num 3))
+     STk> (define test-num-2 (make-py-num 2))
+     STk> (define test-list
+            (make-py-list (list (make-py-num 3) (make-py-num 4)
+                                (make-py-num 5) (make-py-num 6))))
+     STk> (ask (ask test-list '__contains__ test-num-1) 'true?)
+     #t
+     STk> (ask (ask test-list '__contains__ test-num-2) 'true?)
+     #f
+
+
+*** PERSON B ***
+
+B4.  (**) Implement the NEGATE-BOOL procedure stub in the "py-primitives"
+Scheme file.  This procedure takes in a PY-BOOL object and returns the
+PY-BOOL object with the opposite value.  In other words, if the
+argument is a PY-BOOL object whose value is #t, then the return value
+is a PY-BOOL object whose value is #f, and vice-versa.
+
+Potentially helpful notes:
+
+*  PY-BOOL objects return the correspoding Scheme boolean through the
+   method 'val'.
+*  You may find the global true and false PY-BOOL objects, known as
+   *PY-TRUE* and *PY-FALSE* respectively.
+
+You will be able to completely test your NEGATE-BOOL procedure after
+question B5.  For now, you can test your code as follows:
+
+     STk> (ask (negate-bool *PY-TRUE*) 'true?)
+     #f
+     STk> (ask (negate-bool *PY-FALSE*) 'true?)
+     #t
+
+*** COMBINE WORK NOW ***
+
+========================
+MODIFYING THE EVALUATOR*
+========================
+Enough talk; let's get our hands dirty and modify the existing
+evaluator.  The following exercises should be done separately.  After
+both partners have finished coding (and testing!) their answers,
+combine both answers.
+
+*** PERSON A ***
+
+A5.  (**) Python has support for the Boolean operators 'and' and 'or',
+which work exactly as the corresponding Scheme special forms work:
+
+     >>> x = 3
+     >>> (x == 3) and (x == 4)
+     False
+
+     >>> True and 3 and 5
+     5
+
+     >>> True and 3 and False
+     False
+
+     >>> True or 3 or False
+     True
+
+The Python equivalents for #t and #f are True and False, respectively
+(capitalization is important).  We will add this functionality to
+Schython.  Since 'and' and 'or' are infix operators in Python, we will
+add this support to the HANDLE-INFIX procedure.
+
+This task involves the following steps:
+1.  Add one clause to the COND-statement, after the INFIX-OP? clause,
+that checks if the next token in the line object is "and".  The local
+variable TOKEN is already the next token in the line object.  You may
+find the AND? infix selector useful; it is located in the section
+labeled "Infix selectors".
+2.  For the new clause, add functionality to make the 'and' operator
+work.
+
+Potentially helpful notes:
+
+*  Recall that the argument VAL (to HANDLE-INFIX) is an object that
+   stores the value of the "left" operand.  Since VAL is a subclass of
+   the PY-OBJ class, it understands the 'true?' method.  We will need
+   this method to determine if VAL (or any PY-OBJ object) is true or
+   false.
+*  If the "left" operand turns out to be true, then return the result
+   of evaluating the rest of the line object using PY-EVAL, which we
+   trust (recursively) returns an object of the PY-OBJ class or any of
+   its subclasses.
+*  If the "left" operand turns out to be false, then return a PY-BOOL
+   object that contains the value #f  Before returning this object,
+   however, we need to "eat" the rest of the expression, so that the
+   rest of the expression is not evaluated: you may find the EAT-TOKENS
+   procedure useful.
+*  Remember that HANDLE-INFIX must return an object of the PY-OBJ
+   class or of its subclasses, *not* a Scheme symbol or primitive.
+
+Notice that this is very similar to how we implemented AND in the
+metacircular evaluator: if the first argument is true, we evaluate the
+rest of the arguments; otherwise, we return false.  Once you are done,
+add similar functionality to make the 'or' Boolean operator work.
+
+*** PERSON B ***
+
+B5.  (**) Python has a special 'in' operator, which is its analog to
+Scheme's MEMBER? predicate:
+
+     >>> 1 in [1, 2, 3]
+     True
+
+     >>> 4 in [1, 2, 3]
+     False
+
+Internally, Python converts these expressions to:
+
+     >>> [1, 2, 3].__contains__(1)
+     True
+
+     >>> [1, 2, 3].__contains__(4)
+     False
+
+The Python equivalents for #t and #f are True and False, respectively
+(capitalization is important).  We will add this functionality to
+Schython.  Since 'in' is an infix operators in Python, we will add
+this support to the HANDLE-INFIX procedure.
+
+This task involves the following steps:
+1.  Add one clause to the COND-statement, after the INFIX-OP? clause,
+that checks if the next token in the line object is "in".  The local
+variable TOKEN is already the next token in the line object.  You may
+find the IN? infix selector useful; it is located in the section
+labeled "Infix selectors".
+2.  For the new clauses, add functionality to make the 'in' operator
+work.
+
+Potentially helpful notes:
+
+*  Recall that the argument VAL (to HANDLE-INFIX) is an object that
+   stores the value of the "left" operand.
+*  We will need to evaluate the "right" operand of the 'in' operator,
+   but we don't have to evaluate the rest of the line object, because
+   the expression containing the 'in' operator could potentially be
+   part of a bigger expression:
+
+     >>> (2 in [2, 3, 4]) and (3 in [4, 5, 6])
+
+In the above case, we want to evaluate "[2, 3, 4]" for the first
+'in'-operator, not the rest of the line object.  Use the EVAL-ITEM
+procedure to evaluate the next item on the line object.  We will
+obtain an object that understands the '__contains__' method, as was
+defined in question A4.  An object that understands the '__contains__'
+method takes in another object as an argument and returns a PY-BOOL object.
+
+* Remember that HANDLE-INFIX must return an object of the PY-OBJ class
+or its subclasses, *not* a Scheme symbol or primitive.
+
+Once you are done, add similar functionality to make the 'not in'
+operator work.  The 'not in' operator works exactly opposite to the
+'in' operator:
+
+     >>> 1 not in [2, 3, 4]
+     True
+
+The new functionality that you add should be similar to what you added
+for the 'in' operator.
+
+Potentially helpful notes:
+
+*  The NOT? predicate will need to take in both the current token.
+   You will only need to check that the current token is 'not' and that
+   the next token is 'in'.  The next token *needs* to be 'in', since
+   'not in' is the only infix operator that contains the 'not' token.
+*  Do not forget to remove the 'in' token from the line object.
+*  You will find the NEGATE-BOOL procedure, defined earlier in
+   question B4, useful.
+
+The test cases provided above should now work.
+
+*** COMBINE WORK NOW ***
+
+
+At this point, both partners should have code that successfully
+manages to evaluate expressions containing the 'and', 'or', 'in', and
+'not in' operators.
+
+Let's step back a bit and look at what you have just done: you have
+done something particularly cool.  You have read characters from the
+user, separated the characters into usable tokens, evaluated certain
+tokens and converted them into Python objects, provided an interface
+(through methods such as '__contains__') that allowed Python objects
+to communicate with Scheme, recognized the existence of an operator
+(such as 'in') in a line of Python code, and evaluated the entire line.
+You have basically finished a portion of the evaluator that reads a line
+of Python code from the user and understands it completely!
+Go on and take a bow.  Better yet, take a break.
+
+=======
+BLOCKS*
+=======
+We will now modify the evaluator to understand the statements
+available in regular Python that use blocks, such as the
+'if'-statement and procedure definitions. =In Schython, blocks are
+internally represented as lists whose first element is the word
+*BLOCK*.= Currently, Schython understands procedure definitions.
+Let's look at how Schython implements procedure definitions so that we
+can recognize a pattern in evaluating a statement that uses blocks:
+
+1.  We first need to be able to recognize procedure definitions.  How
+do we know that we are about to start defining a procedure?  With the
+'def' token.  Hence, as a first step, we add a clause to the EVAL-ITEM
+procedure that determines if the current token is a DEF token, using
+the DEF? predicate.
+
+2.  Then, we read the procedure definition and body from the line
+object and from the prompt.  We then construct a "DEF-block", a new
+abstract data type, using the MAKE-DEF-BLOCK constructor.  Internally,
+the "DEF-block" is a list of four elements: the word *BLOCK*, the word
+*DEF-BLOCK*, a pair of the name and the parameters, and the body.  The
+DEF-BLOCK-NAME, DEF-BLOCK-PARAMS, and DEF-BLOCK-BODY selectors allow
+us to extract different sections of a "DEF-block".
+
+3.  Once we have obtained a "DEF-block", we stick it back onto the
+front of the line object, and then rerun PY-EVAL on the line object.
+On the second pass through the EVAL-ITEM procedure, the new
+"DEF-block" satisfies the BLOCK? predicate and gets handled by the
+EVAL-BLOCK procedure, which strips off the *BLOCK* tag and passes the
+block to the EVAL-DEF-BLOCK procedure.  (This should remind you a
+bit of data-directed programming.)
+
+4.  The EVAL-DEF-BLOCK procedure finally creates a PY-PROC object
+using the MAKE-PY-PROC procedure and uses the DEFINE-VARIABLE!
+procedure to store it in the environment where the Python procedure
+was defined.
+
+We will be using these steps as a general guideline to implementing
+statements with blocks in Schython.  Basically, we are running
+EVAL-ITEM two times: in the first pass, we first collect user input,
+package the user input into a "DEF-block", and then we stick the
+"DEF-block" back to the front of the line object.  In the second pass,
+we detect this new "DEF-block" and evaluate it.
+
+===========
+WHILE-LOOP*
+===========
+The 'while'-loop is a construct in Python that allows code to be run
+so long as a certain condition is met.  For example,
+
+     >>> x = 3
+     >>> while x < 5:
+     ...   print x
+     ...   x = x + 1
+
+The block containing the lines 'print x' and 'x = x + 1' will be
+evaluated so long as the variable 'x' is less than 5.  As a result,
+these lines will be evaluated twice.  The corresponding Scheme code
+would be:
+
+     STk> (define (loop x)
+            (if (< x 5)
+                (begin
+                  (show x)
+                  (loop (+ x 1)))))
+
+     STk> (loop 3)
+
+The 'while'-loop in Python has several additional features:
+
+(1) The 'break'-statement breaks out of the 'while'-loop, and prevents
+future loops from running, even though the condition may still be
+satisfied.  For example,
+
+     >>> x = 2
+     >>> while x < 5:
+     ...   print "Foo"
+     ...   if x == 3:
+     ...     break
+     ...   print "Bar"
+     ...   x = x + 1
+
+would print "Foo" two times (when 'x' is 2 and 3) and "Bar" one time
+(when 'x' is 2), because the 'while'-loop breaks when 'x' is 3.  In
+the absence of the 'break'-statement, however, the 'while'-loop would
+have printed "Foo" and "Bar" three times.
+
+(2) The 'continue'-statement skips over the rest of the statements in
+the 'while'-loop, but does not break out of the loop.  For example,
+
+     >>> x = 2
+     >>> while x < 5:
+     ...   print "Foo"
+     ...   x = x + 1
+     ...   if x == 3:
+     ...     continue
+     ...   print "Bar"
+
+would print "Foo" three times and "Bar" two times, because the
+'while'-loop skips the 'print "Bar"' statement when 'x' is 3.
+
+(3) 'while'-loops can also have an 'else'-block, which is run after
+the 'while'-loop finishes, but only if the 'while'-loop was never
+broken out of using the 'break'-statement.  For example,
+
+     >>> x = 2
+     >>> while x < 5:
+     ...   x = x + 1
+     ...   print "Foo"
+     ... else:
+     ...   print "Bar"
+
+would print "Bar" once, after "Foo" was printed three times.  If,
+however, there was a 'break'-statement inside the 'while'-loop,
+"Bar" would not be printed.
+
+*** COMMON EXERCISE ***
+
+6.  Let's start off with a common exercise and implement the
+'while'-loop.  The main task is to read input from the user and
+package the input into a "WHILE-block", a new abstract data type.  A
+"WHILE-block" is essentially a "compound" token that we will construct
+from user input and stick onto the front of the line object, as you
+can see from the EVAL-ITEM procedure.  Then, when we rerun the PY-EVAL
+procedure on the line object, we will detect the "WHILE-block" and
+process it using the EVAL-BLOCK procedure, which eventually calls the
+EVAL-WHILE-BLOCK workhorse procedure.
+
+We have already provided the EVAL-WHILE-BLOCK procedure for you.
+However, it uses constructors and selectors that have not been
+implemented: the MAKE-WHILE-BLOCK constructor, and the
+WHILE-BLOCK-PRED, WHILE-BLOCK-BODY, and WHILE-BLOCK-ELSE selectors.
+Fill out these procedures so that they represent constructors and
+selectors on a "WHILE-block" abstract data type.
+
+The MAKE-WHILE-BLOCK procedure should return a "WHILE-block", which
+is represented as a list of at least two elements, where the first
+two elements are the tags *BLOCK* and *WHILE-BLOCK* (used for
+data-directed dispatch, as explained above); the rest of the list
+can contain whatever information you wish, in whatever order you
+wish, but the selectors should work properly with your implementation.
+
+Potentially helpful notes:
+
+*  The MAKE-WHILE-BLOCK procedure is given, as an argument, the first
+line of the 'while'-loop, stored in a line object but without the
+'while'-token (because at this point, the 'while'-token has been
+identified and eaten).  You may want to implement a helper procedure
+that collects a list of tokens in the predicate: all tokens on the
+first line *before* the :-character (you have performed a similar task
+before).  Assume correct syntax; you do not need to worry about errors
+for incorrect syntax.  The WHILE-BLOCK-PRED selector should return the
+list of tokens in the predicate, =prepended with the indentation of the
+first line of the 'while'-loop=.  This indentation is important because
+the line will eventually be passed to the MAKE-LINE-OBJ procedure.
+
+*  We need to collect the body of the 'while'-loop into a list of
+lines and blocks.  Based on the syntax described above, the body
+of the 'while'-loop starts with the next line, and contains the
+subsequent indented lines.  We stop collecting the lines of the
+body at a line with the same indentation level as the first line
+of the 'while'-loop, *unless* the line begins with an 'else:' token,
+in which case =we keep collecting lines=.  We have provided a
+READ-BLOCK helper procedure that you can use, which takes in the
+indentation of the first line of the 'while'-loop (you may find
+the 'indentation' method of the LINE-OBJ class useful here) and
+the current environment as arguments.  The READ-BLOCK helper
+procedure returns a list of lines (each prepended with their
+indentations), and of blocks for each nested block; it calls
+itself recursively for each nested block it sees, so you do not
+have to worry about these nested blocks.
+
+*  One issue with the READ-BLOCK helper is that it returns the
+packaged "ELSE-block" along with the rest of the body of the
+'while'-loop.  The WHILE-BLOCK-BODY and WHILE-BLOCK-ELSE selectors
+need to return the body and the "ELSE-block" separately.  You
+may find the SPLIT-BLOCK procedure useful here; read its comments
+to figure out how best to use it.  The WHILE-BLOCK-ELSE selector
+should return #f if the 'while'-loop has no associated 'else'-block.
+
+The code that deals with "ELSE-block"s, by the way, may be able to
+provide more hints and suggestions on approaching the problem.
+
+Once you are done with the 'while'-loop, the following test cases
+should now work:
+
+     >>> x = 3
+     >>> while x < 5:
+     ...   print x
+     ...   x = x + 1
+
+     >>> x = 3
+     >>> while x < 5:
+     ...   print x
+     ...   break
+
+     >>> x = 3
+     >>> while x < 5:
+     ...   x = x + 1
+     ...   continue
+
+Now that you have some experience dealing with blocks in Schython, we
+will implement more blocks from scratch.  The following exercise
+should be done separately.
+
+*** PERSON A ***
+=========
+FOR-LOOP*
+=========
+A7.  The 'for'-loop is a looping construct in Python that *iterates*
+over a COLLECTION of objects; in other words, the 'for'-loop goes
+through each item in a collection, and runs its body for each item
+that it sees.
+
+     >>> for i in [1, 3, 5, 2, 4]:
+     ...   print i
+
+"[1, 3, 5, 2, 4]" is the collection that the 'for'-loop iterates over,
+which also happens to be a list.  'i' is a LOOP VARIABLE that, during
+the first run of the 'for'-loop, contains the value 1; for subsequent
+loops, it contains the values 3, 5, 2, and 4.  The equivalent Scheme
+program is
+
+     STk> (define (for-loop lst)
+            (if (not (null? lst))
+                (begin
+                  (print (car lst))
+                  (for-loop (cdr lst)))))
+
+     STk> (for-loop '(1 3 5 2 4))
+
+The 'for'-loop also supports the 'break', 'continue', and
+'else'-statements that the 'while'-loop understands, and these
+statements function similarly.  The collection that the 'for'-loop
+iterates over need not necessarily be a list; it can also be the
+result of a 'range' function call.  'range' is a Python primitive that
+generates a list.  It comes in three forms:
+
+     >>> range(7)
+     [0, 1, 2, 3, 4, 5, 6]
+
+     >>> range(3, 7)
+     [3, 4, 5, 6]
+
+     >>> range(3, 10, 2)
+     [3, 5, 7, 9]
+
+In its most basic form, with only one argument, the 'range' function
+returns a list of numbers from 1 to the given number.  In the
+two-argument form, it returns a list of numbers from the first argument
+to one less than the second argument.  In the three-argument form, it
+returns a list of numbers from the first argument to the second argument,
+with increments equal in size to the third argument.
+
+As a result, we can create 'for'-loops such as:
+
+     >>> for i in range(3, 10, 2):
+     ...   print i
+
+You will implement the 'for'-loop in Schython, including constructors
+and selectors for the "FOR-block" abstract data type, and the
+procedure that evaluates a "FOR-block".  We have provided the stubs
+for these constructors and selectors:
+
+*  The MAKE-FOR-BLOCK constructor is given, as an argument, the first
+   line of the 'for'-loop, stored in a line object but without the
+   'for'-token (because at this point, the 'for'-token has been
+   identified and eaten).  The MAKE-FOR-BLOCK procedure should return
+   a list of at least two elements, where the first two elements are
+   the tags *BLOCK* and *FOR-BLOCK* (used for data-directed dispatch,
+   as explained above); the rest of the list can contain whatever
+   information you wish, in whatever order you wish, but the selectors
+   should work properly with your implementation.
+
+**  The FOR-BLOCK-VAR selector takes in a "FOR-block" and returns the
+    loop variable as a token;
+**  The FOR-BLOCK-COLLECTION selector returns a list of tokens
+    corresponding to the collection (the tokens after the 'in' token
+    and before the ':' token);
+**  The FOR-BLOCK-BODY selector returns a list of the lines (each
+    prepended with their respective indentations) and the blocks in
+    the body of the "FOR-block", and
+**  The FOR-BLOCK-ELSE selector returns the 'else'-block, if any
+    (including the *BLOCK* and *ELSE-BLOCK* tags).
+
+In implementing the above selectors, you may (and should) refer to your
+implementation of the 'while'-loop: both tasks are similar.
+
+The EVAL-FOR-BLOCK procedure takes in a "FOR-block" and the current
+environment as arguments.  A few helpful hints on implementing this
+procedure:
+
+*  We use the selectors that you defined above to extract different
+   sections of the "FOR-block".
+*  We need to evaluate the collection in the current environment.  In
+   order to achieve this, we convert the collection to a LINE-OBJ
+   object, and rerun the PY-EVAL procedure on the resultant LINE-OBJ
+   object.  However, since LINE-OBJ objects need an indentation as the
+   instantiation variable, we use the word '*DUMMY-INDENT* as the
+   indentation.  Why?  We do not care about the indentation when
+   evaluating the collection, because all the evaluator needs to do is
+   recognize what the collection is.
+*  PY-LIST objects understand the '__iter__' method.  Since the result
+   of PY-EVAL-ing the collection is a PY-LIST object, the core of the
+   EVAL-FOR-BLOCK procedure is calling the '__iter__' method on this
+   PY-LIST object.  The '__iter__' method takes in three arguments:
+   the name of the loop variable, the body of the "FOR-loop", and the
+   current environment.  The '__iter__' method uses the loop variable
+   and the collection to evaluate the body (multiple times) in the
+   current environment.
+*  If the result of the '__iter__' method is the word *BREAK*, this
+   implies that a 'break'-statement was used to break out of the
+   'for'-loop.  If this is the case, then the EVAL-FOR-BLOCK should
+   return a None object.  (Recall that there is a global *NONE*
+   variable that stores an instance of the 'none' class, a subclass
+   of the PY-OBJ class.)  Otherwise, the 'for'-loop was not broken
+   out of, and so if there is an 'else'-clause, then EVAL-FOR-BLOCK
+   should return the result of evaluating the 'else'-clause.  If there
+   is no 'else'-clause, then EVAL-FOR-BLOCK can return nothing; since
+   Scheme procedures must always return something, however, EVAL-FOR-BLOCK
+   should then return *NONE*.
+*  To evaluate the 'else'-clause, we need to make a line object out of
+   the 'else'-clause using the MAKE-LINE-OBJ procedure, and pass this line
+   object to the EVAL-ITEM procedure; recall that the EVAL-ITEM procedure
+   evaluates one item at a time in the environment provided.  Remember also
+   that the 'else'-clause extracted from a "FOR-block" already has the
+   indentation prepended.
+
+Once you are done, the test cases provided above should now work.
+
+*** PERSON B ***
+=============
+IF-STATEMENT*
+=============
+B7.  We have shown the 'if'-statement in the introduction to this
+project, which works similarly to the IF special-form in Scheme.
+'if'-statements also have a syntactically useful feature:
+'elif'-blocks.  We have seen nested IF-blocks in Scheme before, in
+situations involving multiple conditions:
+
+     (if (= x 3)
+         (+ x 1)
+         (if (< x 4)
+             (+ x 2)
+             (if (> x 5)
+                 (+ x 3)
+                 (+ x 4))))
+
+Using 'elif'-blocks, the corresponding Python expression is
+
+     >>> if x == 3:
+     ...   print x + 1
+     ... elif x < 4:
+     ...   print x + 2
+     ... elif x > 5:
+     ...   print x + 3
+     ... else:
+     ...   print x + 4
+
+In other words, 'elif'-blocks allow the 'if'-statement to become the
+Python equivalent of Scheme's COND construct.
+
+You will implement the 'if'-statement in Schython, including
+constructors and selectors for the "IF-block" abstract data type, and
+the procedure that evaluates a "IF-block".  We have provided the stubs
+for these constructors and selectors:
+
+*  The MAKE-IF-BLOCK constructor is given, as an argument, the first
+   line of the 'if'-statement, stored in a line object but without the
+   'if'-token (because at this point, the 'if'-token has been
+   identified and eaten).  The MAKE-IF-BLOCK procedure should return
+   a list of at least two elements, where the first two elements are
+   the tags *BLOCK* and *IF-BLOCK* (used for data-directed dispatch,
+   as explained above); the rest of the list can contain whatever
+   information you wish, in whatever order you wish, but the selectors
+   should work properly with your implementation.
+
+**  The IF-BLOCK-PRED selector takes in an "IF-block" and returns the
+    predicate as a list of tokens with the indentation prepended;
+**  The IF-BLOCK-BODY selector returns a list of the lines (each
+    prepended with their respective indentations) and the blocks in
+    the body of the "IF-block", and
+**  The IF-BLOCK-ELSE selector returns the 'elif'-block or the
+    'else'-block, if any.
+
+A note on the IF-BLOCK-ELSE selector: it returns either an 'elif'-block
+(with tags *BLOCK* and *ELIF-BLOCK*) or an 'else'-block (with tags *BLOCK*
+and *ELSE-BLOCK*), depending on which immediately follows the 'if'-statement.
+An 'elif'-block contains *all* of the blocks that follow the initial block.
+Why?  Because the code:
+
+     >>> if x == 3:
+     ...   print x + 1
+     ... elif x < 4:
+     ...   print x + 2
+     ... elif x > 5:
+     ...   print x + 3
+     ... else:
+     ...   print x + 4
+
+is equivalent to
+
+     >>> if x == 3:
+     ...   print x + 1
+     ... else:
+	   ...   if x < 4:
+     ...     print x + 2
+     ...   else:
+	   ...     if x > 5:
+     ...       print x + 3
+     ...     else:
+     ...       print x + 4
+
+In other words, an 'if-elif-else' construct can be converted into an
+equivalent series of nested 'if'-statements.  As a result, to simplify
+processing and to allow for recursive processing, as we will soon see,
+the 'elif'-block contains all of the other blocks (in this example,
+from the case 'x < 4' onwards).  Basically, an "ELIF-block" is simply
+an "IF-block" that has been nested inside the 'else'-clause of another
+"IF-block".
+
+In implementing the above selectors, you may (and should) refer to your
+implementation of the 'while'-loop: both tasks are similar.
+
+Once you are done, also implement the constructors and the selectors
+for the "ELIF-block".
+
+The EVAL-IF-BLOCK procedure takes in an "IF-block" and the current
+environment as arguments.  A few helpful hints on implementing this
+procedure:
+
+*  We use the selectors to extract different portions of the "IF-block".
+   We then evaluate the predicate using the PY-EVAL procedure.  However,
+   since PY-EVAL expects a line object, we use the MAKE-LINE-OBJ procedure;
+   remember that the predicate extracted from an "IF-block" already has the
+   indentation prepended.
+*  If the result of evaluating the predicate is a true PY-BOOL object (how
+   can you check?), then simply run the EVAL-SEQUENCE procedure on the body
+   of the "IF-block", which evaluates the body in the environment provided,
+   and returns a PY-OBJ object.  If not, and if there is an 'else'-clause,
+   then EVAL-IF-BLOCK should return the result of evaluating the 'else'-clause.
+   If there is no 'else'-clause, then EVAL-IF-BLOCK can return nothing; since
+   Scheme procedures must always return something, however, EVAL-IF-BLOCK
+   should then return *NONE*.
+*  To evaluate the 'else'-clause, we need to make a line object out of
+   the 'else'-clause using the MAKE-LINE-OBJ procedure, and pass this line
+   object to the EVAL-ITEM procedure; recall that the EVAL-ITEM procedure
+   evaluates one item at a time in the environment provided.
+
+Also, implement the EVAL-ELIF-BLOCK procedure.  We take advantage of the
+structure of an ELIF-BLOCK to simplify our work here.  As we noted above,
+an ELIF-block contains any other clauses, but in a nested manner.  As a
+result, all we will need to do is to write an ELIF->IF procedure, to
+convert the "ELIF-block" into an "IF-block", and then run the EVAL-IF-BLOCK
+procedure on this new IF-BLOCK.  To perform this conversion, simply convert
+the tags to *BLOCK* and *IF-BLOCK*.  Why does this work?  Because an
+"ELIF-block", remember, is simply an "IF-block" that has been nested inside
+the 'else'-clause of another "IF-block".
+
+Once you are done, the test cases provided above should now work.
+
+*** COMBINE WORK NOW ***
+
+By this point, your code should now be able to understand and evaluate
+'while'-loops, 'for'-loops, and the 'if'-statement.
+
+
+*** COMMON EXERCISE ***
+====================
+Parsing Dictionaries
+====================
+
+8. Dictionaries in Python provide a useful way to associate a key with a value.
+(Dictionaries are also called hash tables or associative arrays. Dictionaries are
+the equivalent of Associative Lists/ 2D Table that we saw in Lesson 9). Python provides a
+nice, literal syntax, to describe dictionaries. (Similar in style to the way lists
+can be written as literals in Python). Let's see some usages of dictionaries:
+
+      >>> x = {"hello" : "world", "foo" : "bar"} # define a dictionary, named x, with two keys and two values
+      >>> x
+      { "hello" : "world", "foo" : "bar" }
+
+      >>> x["hello"] # dictionaries can be subscripted, like lists. They expect keys as their subscript input, and if the dictionary contains that key, it will return the associated value
+      'world'
+
+      >>> x["foo"]
+      'bar'
+
+      >>> x[1] = 2
+      >>> x
+      { "hello" : "world", "foo" : "bar", 1 : 2 }
+      >>> x["hello"] = x[1] + 3
+      >>> x
+      {  "hello" : 5,   "foo" : "bar",   1 : 2 }
+
+
+Dictionaries in python can be defined using following syntax:
+      dict = {
+        key1 : val1 ,
+        key2 : val2 ,
+            ...
+            ...
+        keyN : valN
+      }
+
+Dictionaries can be defined as the empty dictionary:
+    dict = {}
+
+With one key-value pair:
+    dict = { key : val }
+Or with more than one key-value pair:
+    dict = { key1 : val1, key2 : val2 }
+
+For this question we expect you and your partner to write the scheme
+COLLECT-KEY-VALUE method (found in 'py-meta.scm'). It takes in a LINE-OBJ,
+an ENV, and a CLOSE-TOKEN. The LINE-OBJ passed to COLLECT-KEY-VALUE already
+has the open brace ('{') token removed. CLOSE-TOKEN is always a close brace ('}'),
+but make sure to compare tokens in LINE-OBJ against the CLOSE-TOKEN variable (in case
+we ever want to change our syntax). Your implementation of this method should
+evaluate each key and each value, and return a list of scheme pairs where each
+pair is the evaluated key paired with the evaluated value. For example, the
+following dictionary in Python:
+
+      x = { a : b, c : d }
+
+Should produce the following Scheme list:
+
+      ((a . b) (c . d))
+
+Where '(a . b)' is produced by calling
+
+      (cons a b)
+
+Remember that you must evaluate a, b, c, and d, in this Python example, and produce
+this list of pairs with their evaluated values. Here are some notes on proper syntax
+for python dictionaries:
+* Separating each key and value is a colon (':')
+* If the dictionary contains more than one key-value pair, each pair is separated by a comma (',')
+  (note that the last key-value pair doesn't have a comma following it).
+* It is valid to have compound statements for keys and values. For example:
+     >>> x = { 1+2 : 10 + 2}
+     >>> x
+     { 3 : 12 }
+
+Your procedure should terminate when it encounters the CLOSE-TOKEN in the LINE-OBJ.
+You will find the use of the COLON? and COMMA? predicates useful for testing to
+see if a token is a comma or a colon.
+
+If the user doesn't enter proper syntax for a dictionary, for example, if they don't
+separate keys and values with a colon, or they don't separate key-value pairs with
+a comma, COLLECT-KEY-VALUE should throw a SyntaxError. You can throw an error
+in scheme using the PY-ERROR procedure and passing it a string. For example:
+
+    (py-error "SyntaxError: Expected comma separating key-value pairs in dictionary parsing")
+
+
+After completing this problem, make sure your work from problem 'B5' also works with
+dictionaries. A dictionary, like a list, has a method named '__contains__' (ideally,
+you shouldn't have to change any code from B5). 'in' checks to see if a dictionary contains a
+particular key. 'not in' does the opposite of 'in', it returns 'True' if a dictionary
+does not contain a particular key. Here is an example:
+
+      >>> x = { 1 : "a", 2 : "b" }
+      >>> x
+      {  1 : "a",   2 : "b" }
+      >>> 1 in x
+      True
+      >>> 2 in x
+      True
+      >>> 2 not in x
+      False
+      >>> 3 not in x
+      True
+
+
+After completing problem 8, you have finished the implementation of a Python interpreter.
+You've implemented a well-known and well-used language ... in *another* well-known
+and well-used language. Play around with your implementation of Python.
+
+
+*** COMMON EXERCISE ***
+=====================
+Programming in Python
+=====================
+
+Now that we've implemented our Python interpreter, lets see what it can do!
+Remember our good friend Leonardo Fibonacci and the Fibonacci sequence? We're going to
+be playing around with this sequence, so if you've forgotten the sequence, lets
+jog your memory. In Python, we can define a function that computes the Fibonacci sequence
+as follows:
+
+      def fib(n):
+        if n == 0 or n == 1 : # fib(0) = 0; fib(1) = 1
+          return n
+        else:
+          return fib(n-1) + fib(n-2) # fib(n) = fib(n-1) + fib(n-2)
+
+Type the above definition in a file and name it `programs.py` Let's run
+this code to see what it does. Open up a terminal and launch `stk-simply`
+from the same directory that you made the `programs.py` file.
+
+      STk> (load "start")
+      >>> import programs
+      (n)
+
+Let's run this with a few inputs to see what we get.
+
+      >>> fib(1)
+      1
+      >>> fib(0)
+      0
+      >>> fib(4)
+      3
+
+What happens if we try to compute fib(100)? Let's try
+      >>> fib(100)
+
+um...
+
+Has your function returned yet? Trick question, it hasn't. And it won't...
+As least it won't for a long time. But fear not, there is a way to compute
+Fibonacci of 100 efficiently! Remember that we can define a Fibonacci
+procedure using memoization (http://en.wikipedia.org/wiki/Memoization). Recall that the main
+idea behind a memoizing Fibonacci function is to prevent repetitive computation of
+of function calls that contain same input. We can do this by storing the result of
+previous computations. For example, when computing the Fibonacci of 10, the Fibonacci
+of 2 and Fibonacci of 3, etc, have to be recursively computed over and over,
+many times, unnecessarily.
+
+Lets see what a memoizing Fibonacci procedure looks like:
+
+      def make_fib_memos():
+        fib_memos = {}
+        def fib(x):
+          if x in fib_memos:     #fibonacci(x) has already been computed, return this value
+            return fib_memos[x]
+          elif x <= 1:
+            return x
+          else:
+            t = fib(x-1) + fib(x-2)
+            fib_memos[x] = t
+            return t
+        return fib
+
+      memo_fib = make_fib_memos()
+      print memo_fib(10) #prints 55
+      print memo_fib(50) #prints 12586269025
+      print memo_fib(100) #prints 354224848179261915075
+
+
+This procedure first checks to see if it has already computed fib(x),
+if it has, it returns this value. There is no need to compute fib(x)
+again. The fibonacci of 'x' for every 'x' never changes, so recomputing
+this value is a waste.
+
+Memoization is pretty cool, right? A problem that was effectively incomputable
+before (like computing fib(100)) is now computable (and quite efficient!). But
+Fibonacci isn't the only procedure that benefits from being memoized. Consider
+computing the factorial of a number. How would we write a memoizing factorial
+function? In essentially the same way we wrote a memoizing Fibonacci procedure.
+Lets see:
+
+      def make_fact_memos():
+        fact_memos = {}
+        def fact(x):
+          if x in fact_memos:    # we've already computed fact(x)
+            return fact_memos[x]
+          elif x <= 1:
+            return x            # fact(0) = fact(1) = 1
+          else:
+            t = x * fact(x-1)
+            fact_memos[x] = t
+            return t
+        return fact
+
+      memo_fact = make_fact_memos()
+      print memo_fact(0) #prints 1
+      print memo_fact(2) #prints 2
+      print memo_fact(20) #prints 2432902008176640000
+
+Writing these memoizing factorial and Fibonacci procedures is nice, but wouldn't
+it be way cooler if we could solve the memoizing problem in some general form?
+
+
+Our goal is to be able to define a memoizing Fibonacci procedure as follows:
+
+      def __fib(x, memo):
+        if x <= 1:
+          return x
+        else:
+          return memo(x-1) + memo(x-2)
+
+      fib_memo = memoize(__fib)
+
+We pass the 'memoize' function the logic of our recursive procedure, in our example,
+the '__fib' procedure. We then define 'fib_memo' to be the return value from 'memoize(__fib)'.
+This indicates that the 'memoize' procedure must return another procedure! Lets consider the
+'memoize' procedure further. This function takes in a procedure that it will use to compute
+future values to be memoized. Because the return type from the function 'memoize' is another
+procedure, 'memoize' demonstrates that our python interpreter supports higher order procedures.
+Remember, the point of 'memoize' is to store the return values for a given input of a function.
+If it hasn't seen a given input, 'memoize' should calculate the value for the given input, then
+store it (or memoize it, in memoization parlance). You will find that using dictionaries for this
+assignment will be helpful. As another example of using 'memoize', here is how we want to be
+able to define 'factorial':
+
+      def __factorial(x, memo):
+        if x <= 1:
+          return x
+        else:
+          return x * memo(x-1)
+
+      factorial = memoize(__factorial)
+
+9. Define the procedure 'memoize'.
+
+Note that procedures can be defined within other procedures, and procedures can be returned
+from other procedures. As an example, consider the following:
+
+      >>> def compute_square():
+      ...   def square(x):
+      ...     return x * x
+      ...   return square
+      ...
+      >>> y = compute_square()
+      >>> y(10)
+      100
+
+Create a file name 'memoize.py' and write your answer in that Python file.
+
+(Please note that our interpreter does not currently support new lines in function
+ definitions or block statements while importing a file. The following IS okay:
+      def compute_square():
+        def square(x):
+          return x * x
+        return square
+
+ But this is NOT okay:
+      def compute_square():
+
+        def square(x):
+          return x * x
+
+        return square
+)
+
+
+>>> IMPORTANT: Indicate, as a comment at the beginning of py-meta.scm,
+>>> who is person A and who is person B.
+
+>>> IMPORTANT: Turn in a copy of transcripts indicating that you have
+>>> run and tested your project.
+
+Turn in your copy of
+   parser.scm
+   py-meta.scm
+   py-primitives.scm
+   memoize.py
+
+
+=(^_^)= ** END OF PROJECT ** =(^_^)=
+
+Congratulations! You have finished the project! Go home
+and get some well deserved rest.
+
+
+
+OPTIONAL FOR EXPERTS: Implement list comprehensions and default
+parameters for Python procedures.
+
+

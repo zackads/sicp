@@ -1,0 +1,25 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+ <head>
+  <title>Index of /~cs61as/fa11/lib/mapreduce</title>
+ </head>
+ <body>
+<h1>Index of /~cs61as/fa11/lib/mapreduce</h1>
+  <table>
+   <tr><th valign="top"><img src="/icons/blank.gif" alt="[ICO]"></th><th><a href="?C=N;O=A">Name</a></th><th><a href="?C=M;O=A">Last modified</a></th><th><a href="?C=S;O=D">Size</a></th><th><a href="?C=D;O=A">Description</a></th></tr>
+   <tr><th colspan="5"><hr></th></tr>
+<tr><td valign="top"><img src="/icons/back.gif" alt="[PARENTDIR]"></td><td><a href="/~cs61as/fa11/lib/">Parent Directory</a>       </td><td>&nbsp;</td><td align="right">  - </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/p.gif" alt="[   ]"></td><td><a href="helperpareser.py">helperpareser.py</a>       </td><td align="right">2015-09-28 12:28  </td><td align="right">1.7K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="parser.py">parser.py</a>              </td><td align="right">2015-09-28 12:28  </td><td align="right">2.8K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="mapreduce.scm">mapreduce.scm</a>          </td><td align="right">2015-09-28 12:28  </td><td align="right">3.8K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="streammapreduce.scm">streammapreduce.scm</a>    </td><td align="right">2015-09-28 12:28  </td><td align="right">5.8K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="pokemon">pokemon</a>                </td><td align="right">2015-09-28 12:28  </td><td align="right"> 30K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="pokemonstats">pokemonstats</a>           </td><td align="right">2015-09-28 12:28  </td><td align="right"> 36K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="pokemon_data">pokemon_data</a>           </td><td align="right">2015-09-28 12:28  </td><td align="right"> 36K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="pokemonmoves">pokemonmoves</a>           </td><td align="right">2015-09-28 12:28  </td><td align="right"> 43K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="pokemonmoves_data">pokemonmoves_data</a>      </td><td align="right">2015-09-28 12:28  </td><td align="right"> 49K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="millionsongs_data">millionsongs_data</a>      </td><td align="right">2015-09-28 12:28  </td><td align="right">2.0M</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="millionsongs">millionsongs</a>           </td><td align="right">2015-09-28 12:28  </td><td align="right"> 33M</td><td>&nbsp;</td></tr>
+   <tr><th colspan="5"><hr></th></tr>
+</table>
+</body></html>

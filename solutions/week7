@@ -1,0 +1,663 @@
+CS 61A			Week 7 solutions
+
+LAB ASSIGNMENT:
+
+2.62.  Union-set in Theta(n) time.
+
+The key is to realize the differences between union-set and
+intersection-set.  The null case for union-set will be different, because if
+one of the sets is empty, the result must be the other set. In the element
+comparisons, one element will always be added to the result set.  So the
+expressions with the element will be the same as intersection-set, only with
+a cons added.  Here's the solution:
+
+(define (union-set set1 set2)
+   (cond ((null? set1) set2)
+         ((null? set2) set1)
+         (else (let ((x1 (car set1)) (x2 (car set2)))
+                    (cond ((= x1 x2)
+                           (cons x1 (union-set (cdr set1) (cdr set2))))
+                          ((< x1 x2)
+                           (cons x1 (union-set (cdr set1) set2)))
+                          ((< x2 x1)
+                           (cons x2 (union-set set1 (cdr set2)))))))))
+
+
+Trees on page 156:
+
+(define tree1
+  (adjoin-set 1
+   (adjoin-set 5
+    (adjoin-set 11
+     (adjoin-set 3
+      (adjoin-set 9
+       (adjoin-set 7 '())))))))
+
+(define tree2
+  (adjoin-set 11
+   (adjoin-set 5
+    (adjoin-set 9
+     (adjoin-set 1
+      (adjoin-set 7
+       (adjoin-set 3 '())))))))
+
+(define tree3
+  (adjoin-set 1
+   (adjoin-set 7
+    (adjoin-set 11
+     (adjoin-set 3
+      (adjoin-set 9
+       (adjoin-set 5 '())))))))
+
+Other orders are possible; the constraint is that each node must be
+added before any node below it.  So in each case we first adjoin the
+root node, then adjoin the children of the root, etc.  To make sure
+this is clear, here's an alternative way to create tree1:
+
+(define tree1
+  (adjoin-set 11
+   (adjoin-set 9
+    (adjoin-set 5
+     (adjoin-set 1
+      (adjoin-set 3
+       (adjoin-set 7 '())))))))
+
+
+2.74 (Insatiable Enterprises):
+
+(a)  Each division will have a private get-record operation, so each
+division's package will look like this:
+
+(define (install-research-division)
+  ...
+  (define (get-record employee file)
+    ...)
+  ...
+  (put 'get-record 'research get-record)
+  ...)
+
+Then we can write a global get-record procedure like this:
+
+(define (get-record employee division-file)
+  ((get 'get-record (type-tag division-file))
+   employee
+   (contents division-file)))
+
+It'll be invoked, for example, like this:
+            (get-record '(Alan Perlis) research-personnel-list)
+
+For this to work, each division's file must include a type tag
+specifying which division it is.
+
+If, for example, a particular division file is a sequence of
+records, one per employee, and if the employee name is the CAR of 
+each record, then that division can use ASSOC as its get-record
+procedure, by saying
+
+  (put 'get-record 'manufacturing assoc)
+
+in its package-installation procedure.
+
+
+(b)  The salary field might be in a different place in each
+division's files, so we have to use the right selector based
+on the division tag.
+
+(define (get-salary record)
+  (apply-generic 'salary record))
+
+Each division's package must include a salary selector, comparable
+to the magnitude selectors in the complex number example.
+
+Why did I use GET directly in (a) but apply-generic in (b)?  In the
+case of get-salary, the argument is a type-tagged datum.  But in the
+case of get-record, there are two arguments, only one of which (the
+division file) has a type tag.  The employee name, I'm assuming,
+is not tagged.
+
+
+(c)  Find an employee in any division
+
+(define (find-employee-record employee divisions)
+  (cond ((null? divisions) (error "No such employee"))
+	((get-record employee (car divisions)))
+	(else (find-employee-record employee (cdr divisions)))))
+
+This uses the feature that a cond clause with only one expression
+returns the value of that expression if it's not false.
+
+
+(d)  To add a new division, you must create a package for the division,
+make sure the division's personnel file is tagged with the division name,
+and add the division's file to the list of files used as argument to
+find-employee-record.
+
+
+4.  Scheme-1 stuff.
+
+(a)  ((lambda (x) (+ x 3)) 5)
+
+Here's how Scheme-1 handles procedure calls (this is a COND clause
+inside EVAL-1):
+
+       ((pair? exp) (apply-1 (eval-1 (car exp))      ; eval the operator
+                             (map eval-1 (cdr exp)))); eval the args
+
+The expression we're given is a procedure call, in which the procedure
+(lambda (x) (+ x 3)) is called with the argument 5.
+
+So the COND clause ends up, in effect, doing this:
+
+	(apply-1 (eval-1 '(lambda (x) (+ x 3))) (map eval-1 '(5)))
+
+Both lambda expressions and numbers are self-evaluating in Scheme-1,
+so after the calls to EVAL-1, we are effectively saying
+
+	(apply-1 '(lambda (x) (+ x 3)) '(5))
+
+APPLY-1 will substitute 5 for X in the body of the
+lambda, giving the expression (+ 5 3), and calls EVAL-1
+with that expression as argument.  This, too, is a procedure call.
+EVAL-1 calls itself recursively to evaluate
+the symbol + and the numbers 5 and 3.  The numbers are self-evaluating;
+EVAL-1 evaluates symbols by using STk's EVAL, so it gets the primitive
+addition procedure.  Then it calls APPLY-1 with that procedure and
+the list (5 3) as its arguments.  APPLY-1 recognizes that the addition
+procedure is primitive, so it calls STk's APPLY, which does the
+actual addition.
+
+
+(b) As another example, here's FILTER:
+
+((lambda (f seq)
+   ((lambda (filter) (filter filter pred seq))
+    (lambda (filter pred seq)
+      (if (null? seq)
+	  '()
+	  (if (pred (car seq))
+	      (cons (car seq) (filter filter pred (cdr seq)))
+	      (filter filter pred (cdr seq)))))))
+ even?
+ '(5 77 86 42 9 15 8))
+
+
+(c) Why doesn't STk's map work in Scheme-1?  It works for primitives:
+
+	Scheme-1: (map first '(the rain in spain))
+	(t r i s)
+
+but not for lambda-defined procedures:
+
+	Scheme-1: (map (lambda (x) (first x)) '(the rain in spain))
+	Error: bad procedure: (lambda (x) (first x))
+
+This problem illustrates the complexity of having two Scheme interpreters
+coexisting, STk and Scheme-1.  In Scheme-1, lambda expressions are
+self-evaluating:
+
+	Scheme-1: (lambda (x) (first x))
+	(lambda (x) (first x))
+
+But in STk, lambda expressions evaluate to procedures, which are a different
+kind of thing:
+
+	STk> (lambda (x) (first x))
+	#[closure arglist=(x) 40179938]
+
+STk's MAP function requires an *STk* procedure as its argument, not a Scheme-1
+procedure!  Scheme-1 uses STk's primitives as its primitives, so MAP is happy
+with them.  But a Scheme-1 lambda-defined procedure just isn't the same thing
+as an STk lambda-defined procedure.
+
+
+HOMEWORK:
+
+2.75  Message-passing version of make-from-mag-ang :
+
+ (define (make-from-mag-ang r a)
+    (lambda (mesg)
+       (cond ((eq? mesg 'real-part)  (* r (cos a)))
+	     ((eq? mesg 'imag-part)  (* r (sin a)))
+	     ((eq? mesg 'magnitude)  r)
+	     ((eq? mesg 'angle)      a)
+	     (else
+	       (error "Unknown op -- Polar form number" mesg)) )) )
+
+Note that the formal parameter names X and Y that the book uses in
+make-from-real-imag (p. 186) are relatively sensible because they are
+indeed the x and y coordinates of a point in the plane.  X and Y
+are confusing as names for polar coordinates!  I used R and A, for
+Radius and Angle, but MAGNITUDE and ANGLE would be okay, too.
+
+I could have used an internal definition, as they do, instead of
+lambda; the two forms are equivalent.
+
+
+2.76  Compare conventional, data-directed, and message-passing.
+
+To add a new operator:
+
+First we must write a low-level procedure for that operator for each type,
+like (magnitude-rectangular) and (magnitude-polar) if we're adding the
+operator magnitude.  (If we're using a package system, we can add a
+local definition of MAGNITUDE to each package.)  Then...
+
+For conventional style, we write a generic operator procedure
+(magnitude) that invokes the appropriate lower-level procedure
+depending on the type of its operand.
+
+For data-directed style, we use PUT to insert entries in the
+procedure matrix for each low-level procedure; there is no new
+high-level procedure required.
+
+For message-passing style, we modify each of the type dispatch
+procedures to accept a new message corresponding to the new
+operator, dispatching to the appropriate low-level procedure.
+
+To add a new type:
+
+First we must write a low-level procedure for that type for each
+operator, like (real-part-polar), (imag-part-polar),
+(magnitude-polar), and (angle-polar) if we're inventing the
+polar type.  (If we're using a package system, we can create
+a new POLAR package with local definitions of REAL-PART, etc.)
+Then...
+
+For conventional style, we modify each of the generic operator
+procedures (real-part), (imaginary-part), etc. to know about the
+new type, dispatching to the appropriate lower-level procedures.
+
+For data-directed style, we use PUT to insert entries, as for
+a new operator.
+
+For message-passing style, we write a new type dispatch procedure
+that accepts messages 'real-part, 'imag-part, etc. and dispatches
+to the appropriate lower-level procedure.
+
+Which is most appropriate:
+
+Conventional style is certainly INappropriate when many new types
+will be invented, because lots of existing procedures need to be
+modified.
+
+Similarly, message-passing is INappropriate when many new operators
+will be invented and applied to existing types.
+
+Data-directed programming is a possible solution in either case, and is
+probably the best choice if both new types and new operators are likely.
+It's also a good choice if the number of types or operators is large in
+the first place, whether or not new ones will be invented, because it
+minimizes the total number of procedures needed (leaving out the generic
+dispatch procedures for each type or operator) and thereby reduces the
+chances for error.
+
+As you'll see in chapter 3, message-passing style takes on new importance
+when a data object needs to keep track of local state.  But you'll see
+later in the chapter (mutable data) that there are other solutions to
+the local state problem, too.
+
+Message-passing is also sometimes sensible when there are lots of types,
+each of which has its own separate set of operators with unique names, so
+that a data-directed array would be mostly empty.
+
+
+2.77
+
+Starting with
+
+          (magnitude '(complex rectangular 3 . 4))
+
+we call MAGNITUDE giving
+
+          (apply-generic  'magnitude  '(complex rectangular 3 . 4))
+
+The apply-generic function (see pg. 184) just uses GET to find the
+entry corresponding to 'magnitude and '(complex), and gets the same
+function MAGNITUDE that we invoked in the first place.  This
+time, however, the argument to MAGNITUDE is (CONTENTS OBJ)
+so that the first type flag (COMPLEX) is removed.  In other
+words, we end up calling
+
+          (magnitude '(rectangular 3 . 4))
+	
+Calling the function MAGNITUDE again, this becomes :
+
+	  (apply-generic 'magnitude '(rectangular 3 . 4))
+   
+The apply-generic function now looks up the entry for 'magnitude and
+'(rectangular) and finds the MAGNITUDE function from the RECTANGULAR
+package; that function is called with '(3 . 4) as its argument, which
+yields the final answer...  (sqrt (square 3) (square 4))  ==>  5
+
+
+2.79 equ?
+
+(define (equ? a b)
+  (apply-generic 'equ? a b))
+
+In the scheme-number package:
+
+  (put 'equ? '(scheme-number scheme-number) =)
+
+In the rational package:
+
+  (define (equ-rat? x y)
+    (and (= (numer x) (numer y))
+	 (= (denom x) (denom y))))
+  ...
+  (put 'equ? '(rational rational) equ-rat?)
+
+In the complex package:
+
+  (define (equ-complex? x y)
+    (and (= (real-part x) (real-part y))
+	 (= (imag-part x) (imag-part y))))
+  ...
+  (put 'equ? '(complex complex) equ-complex?)
+
+This technique has the advantage that you can compare for equality
+a complex number in rectangular form with a complex number in polar
+form, since the latter is implicitly converted to rectangular by
+equ-complex?.  But it has the disadvantage that when comparing
+two complex numbers in polar form, it needlessly does the arithmetic
+to convert them both to rectangular coordinates.  (On the other
+hand, if you want a polar-specific version of equ?, you have to
+remember that the angles can differ by a multiple of 2*pi and the
+numbers are still equal!)
+
+
+2.80 =zero?
+
+(define (=zero? num)
+  (apply-generic '=zero? num))
+
+In the scheme-number package:
+
+  (put '=zero? '(scheme-number) zero?)
+
+In the rational package:
+
+  (put '=zero? '(rational)
+       (lambda (n) (equ? n (make-rational 0 1))))
+
+In the complex package:
+
+  (put '=zero? '(complex)
+       (lambda (n) (equ? n (make-complex-from-real-imag 0 0))))
+
+Of course I could have used internal defines instead of lambda
+here.  And of course once we invent raising it gets even easier;
+I can just say
+
+(define (=zero? num)
+  (equ? num (make-scheme-number 0)))
+
+because then mixed-type equ? calls will be okay.
+
+
+2.81 Louis messes up again
+
+(a)  This will result in an infinite loop.  Suppose we have two
+complex numbers c1 and c2, and we try (exp c1 c2).  Apply-generic
+will end up trying to compute
+
+  (apply-generic 'exp (complex->complex c1) c2)
+
+but this is the same as
+
+  (apply-generic 'exp c1 c2)
+
+which is what we started with.
+
+
+(b)  Louis is wrong.  If we have a complex exponentiation procedure
+and we PUT it into the table, then apply-generic won't try to convert
+the complex arguments.  And if we don't have a complex exponentiation
+procedure, then apply-generic correctly gives an error message; there's
+nothing better it can do.
+
+(Once we invent the idea of raising, it would be possible to modify
+apply-generic so that if it can't find a function for the given
+type(s), it tries raising the operand(s) just in case the operation
+is implemented for a more general type.  For instance, if we try to
+apply EXP to two rational numbers, apply-generic could raise them to
+real and then the version of EXP for the scheme-number type will work.
+But it's tricky to get this right, especially when there are two
+operands -- should we raise one of them, or both?)
+
+(c)  Nevertheless, here's how it could be done:
+
+              (let ((type1 (car type-tags))
+                    (type2 (cadr type-tags))
+                    (a1 (car args))
+                    (a2 (cadr args)))
+		(IF (EQ? TYPE1 TYPE2)
+		    (ERROR "CAN'T COERCE SAME TYPES" TYPE1)
+		    (let ((t1->t2 (get-coercion type1 type2))
+			  (t2->t1 (get-coercion type2 type1)))
+		      ...)))
+
+
+2.83  Implementation of "raise" operators taking numbers to the next
+level "up" in the hierarchy -- i.e. the next more general type:
+
+               integer -> rational -> real -> complex
+
+The package system as presented in the text has to be modified a little,
+because now instead of having a scheme-number type we want two separate
+types integer and real.  So start by imagining we have two separate
+packages, one for integer and one for real.
+
+In each package we need an operation to raise that kind of number
+to the next type up:
+
+In the integer package:
+
+   (define (integer->rational int)
+      (make-rational int 1))
+   (put 'raise '(integer) integer->rational)
+
+In the rational package:
+
+   (define (rational->real rat)
+      (make-real (/ (numer rat) (denom rat))))
+   (put 'raise '(rational) rational->real)
+
+In the real package:
+
+   (define (real->complex Real)
+      (make-complex-from-real-imag real 0))
+   (put 'raise '(real) real->complex)
+
+And then we can make this global definition:
+
+(define (raise num) (apply-generic 'raise num))
+
+If you want to keep the Scheme-number package, you need a raise method
+that distinguishes integers from non-integers internally, which sort of
+goes against the whole idea of centralizing the type checking:
+
+   (define (scheme-number->something num)
+     (if (integer? num)
+	 (make-rational num 1)
+	 (make-complex-from-real-imag num 0)))
+
+   (put 'raise '(scheme-number) scheme-number->something)
+
+
+
+Scheme-1 MAP:
+
+We're writing a defined procedure in STk that will be a primitive
+procedure for Scheme-1.  So we get to use all the features of STk,
+but we have to be sure to handle Scheme-1's defined procedures.
+(See this week's lab, above, problem 4c.)
+
+(define (map-1 fn seq)
+  (if (null? seq)
+      '()
+      (cons (APPLY-1 FN (LIST (CAR SEQ)))
+	    (map-1 fn (cdr seq)))))
+
+The part in capital letters is the only difference between map-1 and the
+ordinary definition of map.  We can't just say (FN (CAR SEQ)) the way map
+does, because FN might not fit STk's idea of a function, and our procedure is
+running in STk, even though it provides a primitive for Scheme-1.
+
+You could make this more complicated by testing for primitive vs. defined
+Scheme-1 procedures.  For primitives you could say (FN (CAR SEQ)).  But
+since APPLY-1 is happy to accept either a primitive or a lambda expression,
+there's no reason not to use it for both.
+
+
+SCHEME-1 LET:
+
+Here's what a LET expression looks like:
+
+	(LET ((name1 value1) (name2 value2) ...) body)
+
+A good starting point is to write selectors to extract the pieces.
+
+(define let-exp? (exp-checker 'let))
+
+(define (let-names exp)
+  (map car (cadr exp))
+
+(define (let-values exp)
+  (map cadr (cadr exp))
+
+(define let-body caddr)
+
+As in last week's lab exercise, we have to add a clause to the COND in EVAL-1:
+
+(define (eval-1 exp)
+  (cond ((constant? exp) exp)
+	((symbol? exp) (error "Free variable: " exp))
+	((quote-exp? exp) (cadr exp))
+	((if-exp? exp)
+	 (if (eval-1 (cadr exp))
+	     (eval-1 (caddr exp))
+	     (eval-1 (cadddr exp))))
+	((lambda-exp? exp) exp)
+	((and-exp? exp) (eval-and (cdr exp)))	;; added in lab
+	((LET-EXP? EXP) (EVAL-LET EXP))		;; ADDED
+	((pair? exp) (apply-1 (car exp)
+			      (map eval-1 (cdr exp))))
+	(else (error "bad expr: " exp))))
+
+We learned in week 2 that a LET is really a lambda combined with a
+procedure call, and one way we can handle LET expressions is just to
+rearrange the text to get
+
+	( (LAMBDA (name1 name2 ...) body)  value1 value2 ... )
+
+(define (eval-let exp)
+  (eval-1 (cons (list 'lambda (let-names exp) (let-body exp))
+		(let-values exp))))
+
+Isn't that elegant?  It's certainly not much code.  You might not like
+the idea of constructing an expression just so we can tear it back down
+into its pieces for evaluation, so instead you might want to do the
+evaluation directly in terms of the meaning, which is to APPLY an
+implicit procedure to arguments:
+
+(define (eval-let exp)
+  (apply-1 (list 'lambda (let-names exp) (let-body exp))
+	   (map eval-1 (let-values exp))))
+
+We still end up constructing the lambda expression, because in this
+interpreter, a procedure is represented as the expression that created
+it.  (We'll see later that real Scheme interpreters have to represent
+procedures a little differently.)  But we don't construct the procedure
+invocation as an expression; instead we call apply-1, and we also
+call eval-1 for each argument subexpression.
+
+
+
+Extra for experts:
+
+First of all, there's no reason this shouldn't work for anonymous
+procedures too...
+
+(define (inferred-types def)
+  (cond ((eq? (car def) 'define)
+	 (inf-typ (cdadr def) (caddr def)))
+	((eq? (car def) 'lambda)
+	 (inf-typ (cadr def) (caddr def)))
+	(else (error "not a definition"))))
+
+Then the key point is that this is a tree recursion.  For an expression
+such as (append (a b) c '(b c)) we have to note that C is a list, but
+we also have to process the subexpression (a b) to discover that A is
+a procedure.
+
+All of the procedures in this program return an association list as
+their result.  We start by creating a list of the form
+
+    ((a ?) (b ?) (c ?) (d ?) (e ?) (f ?))
+
+and then create modified versions as we learn more about the types.
+
+(define (inf-typ params body)
+  (inf-typ-helper (map (lambda (name) (list name '?)) params) body))
+
+(define (inf-typ-helper alist body)
+  (cond ((not (pair? body)) alist)
+	((assoc (car body) alist)
+	 (inf-typ-seq (typ-subst (car body) 'procedure alist) (cdr body)))
+	((eq? (car body) 'map) (inf-map alist body 'list))
+	((eq? (car body) 'every) (inf-map alist body 'sentence-or-word))
+	((eq? (car body) 'member) (typ-subst (caddr body) 'list alist))
+	((memq (car body) '(+ - max min)) (seq-subst (cdr body) 'number alist))
+	((memq (car body) '(append car cdr)) (seq-subst (cdr body) 'list alist))
+	((memq (car body) '(first butfirst bf sentence se member?))
+	 (seq-subst (cdr body) 'sentence-or-word alist))
+	((eq? (car body) 'quote) alist)
+	((eq? (car body) 'lambda) (inf-lambda alist body))
+	(else (inf-typ-seq alist (cdr body)))))
+
+(define (typ-subst name type alist)
+  (cond ((null? alist) '())
+	((eq? (caar alist) name)
+	 (cons (list name
+		     (if (or (eq? (cadar alist) '?)
+			     (eq? (cadar alist) type))
+			 type
+			 'x))
+	       (cdr alist)))
+	(else (cons (car alist) (typ-subst name type (cdr alist))))))
+
+(define (inf-typ-seq alist seq)
+  (if (null? seq)
+      alist
+      (inf-typ-seq (inf-typ-helper alist (car seq)) (cdr seq))))
+
+(define (inf-map alist body type)
+  (if (pair? (cadr body))
+      (inf-typ-helper (typ-subst (caddr body) type alist)
+		      (cadr body))
+      (typ-subst (cadr body) 'procedure (typ-subst (caddr body) type alist))))
+
+(define (seq-subst seq type alist)
+  (cond ((null? seq) alist)
+	((pair? (car seq))
+	 (seq-subst (cdr seq) type (inf-typ-helper alist (car seq))))
+	(else (seq-subst (cdr seq) type (typ-subst (car seq) type alist)))))
+
+(define (inf-lambda alist exp)
+  ((repeated cdr (length (cadr exp)))
+   (inf-typ-helper (append (map (lambda (name) (list name '?)) (cadr exp))
+			   alist)
+		   (caddr exp))))
+
+
+
+Note -- the check for lambda in inf-typ-helper is meant to handle cases
+like the following:
+
+> (inferred-types
+    '(lambda (a b) (map (lambda (a) (append a a)) b)))
+((a ?) (b list))
+
+The (append a a) inside the inner lambda does NOT tell us anything
+about the parameter A of the outer lambda!

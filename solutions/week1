@@ -1,0 +1,325 @@
+CS 61A		Week 1		Lab and Homework Solutions
+
+FIRST LAB:
+
+No problems that required original solutions!
+
+SECOND LAB:
+
+1.  Nothing original.
+
+2.  If the last letter is Y, then we have to look at the next-to-last:
+
+(define (plural wd)
+  (if (and (equal? (last wd) 'y)
+	   (not (vowel? (last (bl wd)))))
+      (word (bl wd) 'ies)
+      (word wd 's)))
+
+If you didn't think to use AND in that way, it can be done with nested IFs:
+
+(define (plural wd)
+  (if (equal? (last wd) 'y)
+      (if (vowel? (last (bl wd)))
+	  (word wd 's)
+	  (word (bl wd) 'ies))
+      (word wd 's)))
+
+Or, if that's too messy, with a subprocedure:
+
+(define (plural wd)
+  (if (equal? (last wd) 'y)
+      (y-plural (bl wd))
+      (word wd 's)))
+
+(define (y-plural prefix)
+  (if (vowel? (last prefix))
+      (word prefix 'ys)
+      (word prefix 'ies)))
+
+All of these assume the definition of vowel? in the handout.
+
+
+3.  There are, of course, many possible ways to write this.  None is
+perfectly elegant.  The difficulty is figuring out which of the three
+arguments is smallest, so you can leave it out of the computation.
+The way I like best, I think, is a little tricky:
+
+(define (sum-square-large papa mama baby)
+  (define (square x) (* x x))
+  (cond ((> mama papa) (sum-square-large mama papa baby))
+	((> baby mama) (sum-square-large papa baby mama))
+	(else (+ (square papa) (square mama)))))
+
+I think this way is pretty concise and easy to read.  However, it's okay
+if you did it more straightforwardly like this:
+
+(define (sum-square-large a b c)
+  (define (square x) (* x x))
+  (define (sumsq x y) (+ (square x) (square y)))
+  (cond ((and (<= a b) (<= a c)) (sumsq b c))
+	((and (<= b a) (<= b c)) (sumsq a c))
+	(else (sumsq a b)) ))
+
+If you didn't think of using AND to identify the conditions, it could also
+be done using nested IFs:
+
+(define (sum-square-large a b c)
+  (define (square x) (* x x))
+  (define (sumsq x y) (+ (square x) (square y)))
+  (if (>= a b)
+      (if (>= b c)
+	  (sumsq a b)
+	  (sumsq a c))
+      (if (>= a c)
+	  (sumsq a b)
+	  (sumsq b c))))
+
+Some people wanted to start by solving a subproblem: a function to find
+the two largest numbers.  This can be done, but it's harder:
+
+(define (sum-square-large a b c)
+  (define (square x) (* x x))
+  (define (sumsq nums) (+ (square (first nums)) (square (last nums))))
+  (define (two-largest a b c)
+    (cond ((and (<= a b) (<= a c)) (sentence b c))
+	  ((and (<= b a) (<= b c)) (sentence a c))
+	  (else (sentence a b))))
+  (sumsq (two-largest a b c)))
+
+The trick here is that a function can't return two values, so two-largest
+has to return a sentence containing the two numbers.  This hardly seems
+worth the effort, but the attempt to split the problem into logical pieces
+was well-motivated.  It's a good idea in general, but it didn't work out
+well this time.
+
+See also:
+http://code.google.com/p/jrm-code-project/wiki/ProgrammingArt
+
+
+4.  Since we are examining each word of a sentence, the solution will
+involve a recursion of the form (dupls-removed (bf sent)).  The base
+case is an empty sentence; otherwise, there are two possibilities,
+namely, (first sent) either is or isn't duplicated later in the sentence.
+
+(define (dupls-removed sent)
+  (cond ((empty? sent) '())
+	((member? (first sent) (bf sent))
+	 (dupls-removed (bf sent)))
+	(else (sentence (first sent) (dupls-removed (bf sent))))))
+
+============================================================
+
+HOMEWORK:
+
+1.  The Scheme interpreter applies an ordinary procedure by first evaluating
+all the argument expressions and then invoking the procedure.  Consider first
+one of the examples that worked:
+
+> (new-if (= 2 3) 0 5)
+
+Scheme evaluates this expression as follows:
+
+(a) Evaluate the symbol new-if.  Its value turns out to be an ordinary
+procedure.  Therefore the rest of the combination is evaluated normally.
+
+(b) Evaluate the three argument expressions.  Their values are #f [i.e.,
+false], 0, and 5 respectively.
+
+(c) Apply the procedure new-if to the argument values #f, 0, and 5.  By the
+substitution model, this means we must substitute "#f" for "predicate",
+"0" for "then-clause", and "5" for "else-clause":
+	(cond (#f 0) (else 5))
+
+(d) Evaluate this new expression, getting the value 5.
+
+By contrast, if we'd entered the expression
+
+> (if (= 2 3) 0 5)
+
+Scheme would evaluate it as follows:
+
+(a) Notice that the symbol IF is a keyword, the name of a special form.
+Therefore the rest of the combination is evaluated specially.
+
+(b) Invoke the special form with the UNEVALUATED argument expressions
+"(= 2 3)", "0", and "5".
+
+(c) The "if" evaluation rule then causes its first argument to be
+evaluated.  Since the value is #f, i.e. false, it then evaluates
+the expression "5", whose value is the number 5.  The expression "0"
+is never evaluated.
+
+In the example above, it doesn't make any PRACTICAL difference that the
+expression "5" was evaluated to produce the number 5.  [By the way,
+Scheme uses quotation marks for a special purpose, which isn't what I
+mean here.  I'm just using them to delimit something you're to imagine as
+having typed into the computer.]
+
+Now, on to the square root program.  In the body of sqrt-iter, the third and
+final argument to new-if is the expression
+	(sqrt-iter (improve guess x) x)
+Suppose we invoke sqrt-iter with an expression like
+	(sqrt-iter 1 4)
+Since sqrt-iter and new-if are both ordinary procedures, they are applied
+just like the new-if example I described earlier:
+
+(a) Evaluate the symbol sqrt-iter.  Its value turns out to be an ordinary
+procedure.  Therefore the rest of the combination is evaluated normally.
+
+(b) Evaluate the two argument expressions.  Their values are 1 and 4,
+respectively.
+
+(c) Apply the procedure sqrt-iter to the argument values 1 and 4.  By the
+substitution model, this means we must substitute "1" for "guess" and
+"4" for "x":
+	(new-if (good-enough? 1 4)
+		1
+		(sqrt-iter (improve 1 4)
+			   4))
+
+(d) Evaluate this new expression.  Here is where the problem comes in.
+Since new-if is an ordinary procedure, we follow steps (a)-(d) for this
+sub-evaluation also:
+
+(a) Evaluate the symbol new-if.  Its value turns out to be an ordinary
+procedure.  Therefore the rest of the combination is evaluated normally.
+
+(b) Evaluate the three argument expressions.  The first one turns out
+(after a sequence of (a)-(d) steps) to have the value #f, i.e., false.
+The second has the value 1.  The third invokes sqrt-iter, so we start
+another (a)-(d) sequence of steps just like the first one.  But the first
+one is still pending, waiting for us to finish down here.  That is, the
+evaluation of the original (sqrt-iter 1 4) is waiting for the evaluation
+of the new-if expression, and that's waiting for the evaluation of the new
+sqrt-iter expression.  But THAT will involve evaluating another new-if
+expression, which will...  This is an infinite regress.  You'll never get
+any answer at all.
+
+This business of nested evaluations isn't all wrong.  In the real
+sqrt-iter the same thing happens, with sqrt-iter invoking if, and if
+invoking sqrt-iter, and so on.  The difference is that with the real
+if, a special form, Scheme gets to test whether the good-enough? expression
+is true or false BEFORE it evaluates the inner sqrt-iter expression.  At
+first the good-enough? expression is false, so if invokes sqrt-iter repeatedly
+just as in the new-if version.  But eventually good-enough? returns a true
+[that is, #t] value, and then the inner sqrt-iter expression need not be
+evaluated.  With new-if, we needed to evaluate the inner sqrt-iter before
+we had a chance to see if good-enough? came out true or false.  Therefore
+Scheme never finds out that it's time to stop iterating.
+
+
+2.
+
+(define (squares nums)
+  (if (empty? nums)
+      '()
+      (se (square (first nums))
+	  (squares (bf nums)) )))
+
+
+3.  The tricky part is that the first word of the sentence must be
+treated specially, so there has to be a top-level procedure that handles
+it and also invokes a recursive subprocedure for the rest of the words:
+
+(define (switch sent)
+  (se (switch-first (first sent))
+      (switch-rest (bf sent)) ))
+
+(define (switch-first wd)
+  (cond ((equal? wd 'you) 'I)
+	((equal? wd 'I) 'you)
+	((equal? wd 'me) 'you)
+	(else wd) ))
+
+(define (switch-rest sent)
+  (if (empty? sent)
+      '()
+      (se (switch-one (first sent))
+	  (switch-rest (bf sent)) )))
+
+(define (switch-one wd)
+  (cond ((equal? wd 'you) 'me)
+	((equal? wd 'I) 'you)
+	((equal? wd 'me) 'you)
+	(else wd) ))
+
+4.
+
+(define (ordered? sent)
+  (cond ((empty? (bf sent)) #t)
+	((> (first sent) (first (bf sent))) #f)
+	(else (ordered? (bf sent))) ))
+
+This procedure is written assuming that the argument is a sentence that
+contains at least one word, and that all of the words are numbers.
+
+
+5.
+
+(define (ends-e sent)
+  (cond ((empty? sent) '())
+	((equal? (last (first sent)) 'e)
+	 (se (first sent) (ends-e (bf sent))))
+	(else (ends-e (bf sent)))))
+
+
+6.  Are "and" and "or" ordinary functions or special forms?  The general idea
+of the solution is to type in an expression that will produce an error if all
+its subexpressions are evaluated, and see if they all are.  For example,
+supposing there is no definition for the symbol "x" you could say
+
+> (or 1 2 x)
+
+According to the ordinary evaluation rule, the expressions "1" "2" and "x"
+should all be evaluated before "or" is invoked, so you should get an error
+message complaining about the unbound symbol.  On the other hand, if "or"
+is a special form, you'd expect it to stop as soon as it evaluates the "1"
+and give 1 as its result.
+
+If you try this in Scheme, you don't get an error message.
+This means, most likely, that "or" is a special form whose arguments
+are evaluated one by one.  If there were an error message could you 
+conclude that "or" is ordinary?  No!  "Or" could be a special form
+that evaluates its arguments right-to-left.  For that matter there is
+no reason that "or" couldn't evaluate the middle argument first.  How
+would you test for that?
+
+(Of course, in reality you know that they're special forms because
+the textbook told you so.)
+
+Why might a special form be a good idea?  Here are a few reasons:
+
+(a) Efficiency.  Suppose instead of numbers or symbols I used combinations
+as the arguments to "or", and each combination takes several minutes to
+compute.  If the first one happens to be true, it'd be a shame to waste all
+that time computing the others.
+
+(b) Conditions that depend on each other.  Consider the expression
+
+> (or (= x 0) (> 5 (/ y x)))
+
+This will work fine if "or" is special and evaluates left-to-right,
+otherwise we may be dividing by zero.
+
+Reasons why an ordinary function might be preferred:
+
+(c) Fewer kludges.  It's very easy to read and understand a Lisp program
+if you can be sure that everything that looks like (blah glorp zilch)
+is evaluated by evaluating the subexpressions and then applying the
+procedure "blah" to the arguments "glorp" and "zilch".  Everything that
+looks like a procedure application but is really a special case just makes
+things that much harder to understand.
+
+(d) Creeping featurism.  Where do we stop?  Maybe we should make
+multiplication a special form; after all, in the expression
+
+> (* 0 x)
+
+there's no real reason to evaluate x because we know zero times anything
+is zero.  Pretty soon there are no real functions left in the language.
+
+(e) Functional objects.  You're not expected to know this yet, but
+next week you'll learn that procedures can be manipulated as data,
+just as numbers can.  But special forms aren't procedures and there are
+some things we can't do to them.

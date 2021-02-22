@@ -1,0 +1,23 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+ <head>
+  <title>Index of /~cs61as/fa11/lib/schython</title>
+ </head>
+ <body>
+<h1>Index of /~cs61as/fa11/lib/schython</h1>
+  <table>
+   <tr><th valign="top"><img src="/icons/blank.gif" alt="[ICO]"></th><th><a href="?C=N;O=A">Name</a></th><th><a href="?C=M;O=D">Last modified</a></th><th><a href="?C=S;O=A">Size</a></th><th><a href="?C=D;O=A">Description</a></th></tr>
+   <tr><th colspan="5"><hr></th></tr>
+<tr><td valign="top"><img src="/icons/back.gif" alt="[PARENTDIR]"></td><td><a href="/~cs61as/fa11/lib/">Parent Directory</a>       </td><td>&nbsp;</td><td align="right">  - </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/p.gif" alt="[   ]"></td><td><a href="memoize.py">memoize.py</a>             </td><td align="right">2015-09-28 12:28  </td><td align="right"> 30 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="obj.scm">obj.scm</a>                </td><td align="right">2015-09-28 12:28  </td><td align="right">9.2K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="parser.scm">parser.scm</a>             </td><td align="right">2015-09-28 12:28  </td><td align="right">6.6K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/p.gif" alt="[   ]"></td><td><a href="primitives.py">primitives.py</a>          </td><td align="right">2015-09-28 12:28  </td><td align="right">1.0K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="py-meta.scm">py-meta.scm</a>            </td><td align="right">2015-09-28 12:28  </td><td align="right"> 28K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="py-primitives.scm">py-primitives.scm</a>      </td><td align="right">2015-09-28 12:28  </td><td align="right"> 29K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="schython.text">schython.text</a>          </td><td align="right">2015-09-28 12:28  </td><td align="right"> 77K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="start.scm">start.scm</a>              </td><td align="right">2015-09-28 12:28  </td><td align="right">616 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/folder.gif" alt="[DIR]"></td><td><a href="tests/">tests/</a>                 </td><td align="right">2015-12-07 19:44  </td><td align="right">  - </td><td>&nbsp;</td></tr>
+   <tr><th colspan="5"><hr></th></tr>
+</table>
+</body></html>

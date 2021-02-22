@@ -334,3 +334,76 @@ For each type (except complex), design a procedure that raises objects of that t
 > (define (raise n)
 >  (apply-generic 'raise n))
 > ```
+
+## Lab
+
+**Exercise 1a** - Trace in detail how a simple procedure call such as
+
+```scheme
+((lambda (x) (+ x 3)) 5)
+```
+
+is handled in `scheme-1`.
+
+```scheme
+scheme-1 > ((lambda (x) (+ x 3)) 5)
+  (eval-1 ((lambda (x) (+ x 3)) 5))
+    ; ... several other predicate conditions evaluate false
+    (lambda-exp? ((lambda (x) (+ x 3)) 5)) ; evaluates true, returning the expression
+    ((lambda (x) (+ x 3)) 5)
+  ((lambda (x) (+ x 3)) 5)
+  5
+5
+```
+
+**Exercise 1b** - Try inventing higher-order procedures; since you don't have define you'll have to use the Y-combinator trick, like this:
+
+```scheme
+Scheme-1: ((lambda (f n)        ; this lambda is defining MAP
+         ((lambda (map) (map map f n))
+          (lambda (map f n)
+    (if (null? n)
+        '()
+        (cons (f (car n)) (map map f (cdr n))) )) ))
+         first              ; here are the arguments to MAP
+         '(the rain in spain))
+(t r i s)
+```
+
+**Exercise 1c** - Since all the Scheme primitives are automatically available in scheme-1, you might think you could use STk's primitive map function. Try these examples:
+
+```scheme
+Scheme-1: (map first '(the rain in spain))
+Scheme-1: (map (lambda (x) (first x)) '(the rain in spain))
+```
+
+Explain the results.
+
+`(map first '(the rain in spain))` works as you'd expect it to in Scheme because:
+
+1. `(read)` turns it into a list: `'(map first '(the rain in spain))`, meaning `pair? ...` evaluates `#t` and the `apply-1` procedure is called.
+2. The arguments to `apply-1` are further calls to `eval-1`. In the second call to `eval-1` with `(car exp)` as the arguments, `symbol? 'map` evaluates `#t`.
+3. `eval-1` then invokes the underlying Scheme's `eval` function, returning the Scheme primitive `map`.
+4. `map` is a procedure, so in `apply-1` the predicate `procedure?` evalutes true, calling the underlying Scheme `apply`.
+5. `first` is also a symbol in Scheme, so Scheme's underlying `eval` is also used here.
+6. Scheme-1 therefore effectively just calls the underlying Scheme `eval` and `apply` functions for the primitives `map` and `first`, resulting in no different behaviour between Scheme and Scheme-1.
+
+`(map (lambda (x) (first x)) '(the rain in spain))` results in the error:
+
+```scheme
+; map: contract violation
+;   expected: procedure?
+;   given: '(lambda (x) (first x))
+; [,bt for context]
+```
+
+Because:
+
+1. `(read)` turns it into: `'(map (lambda (x) (first x)) '(the rain in spain))`, `pair? ...` == `#t` and `apply-1` is called.
+2. `'map` results in the underlying Scheme `map` being used, courtesy of the underlying Scheme `eval`
+3. In `apply-1`, `(procedure? map)` evaluates #t.
+4. In `eval-1`, `lambda-exp?` evaluates #t for both lambda expressions that are invoked (e.g. `((lambda (x) (first x)) 'argument) ; a`) and those that are not invoked (`(lambda (x) (first x))`). In Scheme-1, lambda expressions pass through unchanged. For the former, the REPL has Scheme's `eval` evaluate the invoked lambda expression, substituting it for its value (`a` in this case). For the latter (a lambda expression not yet invoked), it remains in list form - `'(lambda (x) (first x))`. Scheme's `eval` leaves it as it is, and so in this case when it's passed to `map` the above error results.
+
+> `map`ping `first` over a list in Scheme-1
+
+**Exercise 1d** - Modify the interpreter to add the `and` special form. Test your work. Be sure that as soon as a `false` value is computed, your `and` returns `#f` without evaluating any further arguments.

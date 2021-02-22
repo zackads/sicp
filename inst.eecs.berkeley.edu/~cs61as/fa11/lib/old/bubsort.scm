@@ -1,0 +1,13 @@
+(define (bubble sent)
+  (cond ((empty? (butfirst sent)) sent)
+	((<= (first sent) (first (bf sent)))
+	 (se (first sent) (bubble (bf sent))))
+	(else (se (first (bf sent))
+		  (bubble (se (first sent) (bf (bf sent))))))))
+
+(define (sort sent)
+  (if (empty? sent)
+      '()
+      (let ((bub (bubble sent)))
+	(se (sort (butlast bub))
+	    (last bub)))))

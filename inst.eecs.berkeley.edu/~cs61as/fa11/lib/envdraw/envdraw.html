@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Environment Diagram Drawer for Racket</title>
+<style>
+html, body, * {
+    font-family: "Consolas", monospace;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+input[type=text], input[type=text]:focus {
+    width: 80%;
+    border: 0;
+    outline: none;
+    /*background-color: #EEE;*/
+}
+
+#repl-container {
+    width: 700px;
+    display: inline-block;
+    margin-right: 50px;
+    margin-bottom: 100px;
+}
+
+#draw-container {
+    display: inline-block;
+    vertical-align: top;
+}
+
+.environment {
+    border: 1px solid black;
+    padding: 10px;
+    margin-bottom: 10px;
+    min-width: 250px;
+}
+
+.binding {
+    margin: 10px 0px;
+}
+
+.binding-key {
+    margin-right: 30px;
+    text-align: right;
+    padding-right: 3px;
+}
+
+.binding-value {
+    float: right;
+    padding-left: 10px;
+    /*padding-right: 10px;*/
+    /*border-left: 1px solid black;*/
+    /*border-bottom: 1px solid black;*/
+}
+
+.binding-fn {
+    position: relative;
+    right: -175px;
+}
+
+.prompt {
+    /*color: #546E7A;*/
+    margin-top: 20px;
+}
+
+.prompt:not(:first-child) {
+}
+
+.warn {
+    color: #E65100;
+}
+
+.error {
+    color: #D32F2F;
+}
+</style>
+</head>
+<body>
+    <div id="repl-container">
+        <div>
+            <b>Minimal Environment Diagram Drawer</b> for <b>Racket</b><br>
+            Created by <b>Allen Guo</b><br>
+            Type <b>(help)</b> for more info.<br>
+            Type <b>(apropos)</b> for a list of all valid forms/procedures.
+        </div>
+        <div id="output-container"></div>
+        <div class="prompt">
+            &#8594; <input id="main-input" type="text" autofocus/>
+        </div>
+    </div>
+    <div id="draw-container"></div>
+
+    <script type="text/javascript" src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jsPlumb/1.4.1/jquery.jsPlumb-1.4.1-all-min.js"></script>
+    <script type="text/javascript" src="envdraw.js"></script>
+    <!--<script type="text/javascript" src="tests.js"></script>-->
+</body>
+</html>

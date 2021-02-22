@@ -1,0 +1,10 @@
+(define (double-up! ls)
+  (cond ((null? ls) 'okay)
+	((null? (cdr ls)) 'okay)
+	(else (begin
+		(define temp (car ls))
+		(set-car! ls (cdr ls))
+		(set-cdr! ls (cdar ls))
+		(set-cdr! (car ls) (caar ls))
+		(set-car! (car ls) temp)
+		(double-up! (cdr ls))))))

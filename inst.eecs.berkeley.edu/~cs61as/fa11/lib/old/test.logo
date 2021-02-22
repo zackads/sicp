@@ -1,0 +1,39 @@
+to second :thing
+op first bf :thing
+end
+
+to twice :thing
+pr :thing
+pr :thing
+end
+
+to pigl :word
+if vowelp first :word [op word :word "ay]
+op pigl word bf :word first :word
+end
+
+to vowelp :let
+op memberp :let "aeiou
+end
+
+to piglatin :sent
+if emptyp :sent [op []]
+op fput pigl first :sent piglatin bf :sent
+end
+
+to factorial :n
+if :n=0 [output 1]
+output :n * factorial :n-1
+end
+
+to memberp :thing :list
+if emptyp :list [op "false]
+if equalp :thing first :list [op "true]
+op memberp :thing bf :list
+end
+
+to repeat :num :instr
+if :num=0 [stop]
+run :instr
+repeat :num-1 :instr
+end

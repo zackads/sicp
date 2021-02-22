@@ -1,0 +1,75 @@
+;;; Sanity Check Fall 2000
+;;; Sample test file
+;;; This file contains example tests. Add your own at the end of the
+;;; file, before the bye command. Be sure to include your results in
+;;; the test-results file. See the README for more info.
+
+; library files , berkeley.scm , etc
+(load "/home/aa/projects/scheme/lib/stk/site-scheme/load-simply")
+
+(load "logo.scm")
+(load "logo-meta.scm")
+(define (driver-loop)
+  (define (helper)
+    (prompt "? ")
+    (let ((line (logo-read)))
+      (if (not (null? line))
+          (let ((result (eval-line (make-line-obj line)
+                                   the-global-environment)))
+	    (if (not (eq? result '=exit=))
+		(begin
+		  (if (not (eq? result '=no-value=))                             
+                      (logo-print (list "You don't say what to do with" result)))
+                  (helper)))))))
+  (logo-read)
+  (helper))
+(add-prim 'bye 0 (lambda () '=exit=))  
+(initialize-logo)
+print sum 2 3
+print 2+3
+print sentence word "now "here last [the invisible man]
+print 2+1
+2+1
+print [hi there]
+print "hello
+print "a\+b
+print "+
+to factorial :n
+if :n=0 [output 1]
+output :n * factorial :n-1
+end
+print factorial 5
+print bf 104
+print bf bf 104
+print 7+bf 104
+print (sum 2 3 4)
+print (3 * 4) + 5
+make "foo 27
+print :foo
+to garply
+print "hello
+print "goodbye
+end
+garply
+step "garply
+garply
+
+
+unstep "garply
+garply
+test "true
+iftrue [print 2]
+iffalse [print 1]
+to count :increase static :counter 2+3
+make "counter :counter + :increase
+print :counter
+end
+count 20
+count 1
+bye
+(exit)
+;;; End of tests
+
+
+;;; NOTE: during the stepping tests above, the two empty lines after garply are necessary
+;;; it means the user typed <return> twice!

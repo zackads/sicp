@@ -1,0 +1,9 @@
+; Make sure ENVDRAW_LIBRARY_PATH is set.
+(if (not (getenv "ENVDRAW_LIBRARY_PATH"))
+    (error "Sorry, you must run the 'envdraw' program to use EnvDraw") )
+
+(load "envdraw-init")
+(load "simply") ; not load-simply because it's incompatible with envdraw
+
+(if (not (getenv "NO_AUTORUN"))
+    (envdraw)) ; automatically start EnvDraw

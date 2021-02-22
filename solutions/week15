@@ -1,0 +1,325 @@
+CS 61A			Week 15 Solutions
+
+LAB
+===
+
+4.55
+
+(supervisor ?x (Bitdiddle Ben))
+
+(job ?x (accounting . ?y))
+
+(address ?x (Slumerville . ?y))
+
+The dots are needed because (accounting ?y), for example, would match
+only entries in which there was a single element after the word "accounting."
+That is, (accounting ?y) would match (accounting scrivener) but not
+(accounting chief accountant).
+
+
+4.62
+The base case here involves a 1-element list, not the empty list.
+
+(rule (last-pair (?x) (?x)))
+
+(rule (last-pair (?y . ?z) ?x)
+      (last-pair ?z ?x))
+
+
+HOMEWORK
+========
+
+4.56
+
+(and (supervisor ?x (Bitdiddle Ben))
+     (address ?x ?y))
+
+(and (salary ?x ?s1)
+     (salary (Bitdiddle Ben) ?s2)
+     (lisp-value < ?s1 ?s2))
+
+(and (supervisor ?who ?boss)
+     (not (job ?boss (computer . ?y)))
+     (job ?boss ?z))
+
+The key point here is that we use the same variable name twice if we want
+it to match the same item both times.
+
+
+4.57
+
+(rule (same ?x ?x))		;; Don't use (lisp-value eq? ....)
+
+(rule (replace ?p1 ?p2)
+      (and (or (and (job ?p1 ?x) (job ?p2 ?x))
+	       (and (job ?p1 ?x) (job ?p2 ?y) (can-do-job ?x ?y)))
+      	   (not (same ?p1 ?p2))))
+
+(replace ?x (Fect Cy D))
+
+(and (replace ?x ?y)
+     (salary ?x ?s1)
+     (salary ?y ?s2)
+     (lisp-value < ?s1 ?s2))
+
+
+4.58
+Note the definition of a sub-rule to make things more manageable.
+
+(rule (sup-in-div ?p ?x)
+      (and (supervisor ?p ?boss)
+	   (job ?boss (?x . ?z))))
+
+(rule (big-shot ?person ?division)
+      (and (job ?person (?division . ?x))
+	   (not (sup-in-div ?person ?division))))
+
+
+4.65
+This problem requires understanding the basic idea of how the
+query system works (read Section 4.4.3).
+To respond to a query, the query system generates
+a stream of frames which are then used to "instantiate" the query.
+In this case, the stream will include frames containing all bindings of
+?middle-manager, ?person and ?x satisfying the body of the rule,
+and also with ?who bound to ?person.
+Since Warbucks supervises Bitdiddle and Scrooge, each of who manages
+other people, there will be more than one of these frames.
+Hence Warbucks appears more than once in the output.
+
+
+Extra for Experts
+=================
+
+Here's the REVERSE from lecture:
+
+    (assert! (rule (reverse (?a . ?x) ?y)
+		   (and (reverse ?x ?z)
+			(append ?z (?a) ?y) )))
+
+    (assert! (reverse () ()))
+
+Why won't this run backwards?  It's important to understand this, in order to
+solve the problem.  Unfortunately there are a lot of details, so here's a
+preview of the punch line:  It'll turn out that the query system tries to use
+the recursive rule over and over, in effect constructing longer and longer
+lists whose elements aren't known, and never realizing that they can't
+possibly be the reverse of the given list.
+
+Let's try to work out what happens if we give the simplest possible
+backwards query:
+
+    (reverse ?b (3))
+
+The answer we want is (reverse (3) (3)).  QEVAL starts with the stream of
+frames containing one empty frame:
+
+    {[]}
+
+it matches the query against everything in the database.  Only two are
+relevant -- the ones about REVERSE.  Starting with the base case assertion
+
+    (reverse () ())
+
+we see that this doesn't match the query, because (3) in the third element of
+the query is not () and neither of them is a variable.  That leaves the
+recursive rule.  We unify the query against the conclusion of the rule,
+after renaming the variables in the rule:
+
+    (reverse ?b (3))
+    (reverse (?1a . ?1x) ?1y)
+
+This succeeds, and the empty frame is extended with new bindings:
+
+    [?b = (?1a . ?1x), ?1y = (3)]
+
+Now we use this frame as the starting point for a new query, the rule's body:
+
+    (and (reverse ?1x ?1z) (append ?1z (?1a) ?1y))
+
+Now it gets a little complicated.  QEVAL of an AND query starts by
+evaluating the first part in the current frame.  We match
+
+    (reverse ?1x ?1z)
+
+against all rules and assertions.  Again, let's start with the base case,
+so we are matching
+
+    (reverse ?1x ?1z)
+    (reverse () ())
+
+This extends the frame with new bindings for ?1X and ?1Z:
+
+    [?b = (?1a . ?1x), ?1y = (3), ?1x = (), ?1z = ()]
+
+With these bindings we have to evaluate the second part of the AND:
+
+    (append ?1z (?1a) ?1y)
+
+Substituting values from the frame, this is equivalent to
+
+    (append () (?1a) (3))
+
+which will work fine (leaving out the details about APPEND), giving a
+final extended frame of
+
+    [?b = (?1a . ?1x), ?1y = (3), ?1x = (), ?1z = (), ?1a = 3]
+
+So ?b = (?1a . ?1x) = (3 . ()) = (3).
+
+This is a fine solution, and if the query system looks at assertions
+before rules, it may even be printed before the evaluator gets into an
+infinite loop.  The problem is with the recursive REVERSE rule.
+
+Remember that we are trying to evaluate the query
+
+    (and (reverse ?1x ?1z) (append ?1z (?1a) ?1y))
+
+and that the first step is to evaluate
+
+    (reverse ?1x ?1z)
+
+in the frame
+
+    [?b = (?1a . ?1x), ?1y = (3)]
+
+We've matched the query against the base case for REVERSE, and now we are
+trying the recursive rule.  Here are the query and the conclusion (with
+variables again renamed) of the rule:
+
+    (reverse ?1x ?1z)
+    (reverse (?2a . ?2x) ?2y)
+
+This succeeds; the resulting frame is
+
+    [?b = (?1a . ?1x), ?1y = (3), ?1x = (?2a . ?2x), ?1z = ?2y]
+
+In this frame we must evaluate the body of the rule, namely
+
+    (and (reverse ?2x ?2z) (append ?2z (?2a) ?2y))
+
+Match the REVERSE part against the conclusion of the REVERSE rule
+with variables renamed:
+
+    (reverse ?2x ?2z)
+    (reverse (?3a . ?3x) ?3y)
+
+This extends the frame some more:
+
+    [?b = (?1a . ?1x), ?1y = (3), ?1x = (?2a . ?2x), ?1z = ?2y,
+     ?2x = (?3a . ?3x), ?2z = ?3y]
+
+We human beings can see that this is all nonsense.  Combining some of the
+bindings we see that
+
+    ?b = (?1a . (?2a . (?3a . ?3x)))
+
+which is a list of at least three elements.  So if we ever got to the
+APPEND part of the rule, it wouldn't match -- the result of reversing (3)
+can't be more than one element long!  But QEVAL will never get around to
+the second half of the AND query, because it keeps finding longer and
+longer lists to try to reverse.
+
+Why isn't this a problem when running the REVERSE rules forward?  Let's
+take the query
+
+    (reverse (35) ?d)
+
+This doesn't match the base case, so we try the recursive case renamed:
+
+    (reverse (35) ?d)
+    (reverse (?4a . ?4x) ?4y)
+
+We can see a difference right away:  It's the known list, (35), that we
+divide into its car and its cdr, giving determined values for some of
+the variables in the new frame:
+
+    [?4a = 35, ?4x = (), ?d = ?4y]
+
+We must now evaluate the body of the rule:
+
+    (and (reverse ?4x ?4z) (append ?4z (?4a) ?4y))
+
+I'll skip the part about matching the new REVERSE query against the base
+case, which again gives a correct result.  Instead let's see what happens
+when we try to use the recursive rule again:
+
+    (reverse ?4x ?4z)
+    (reverse (?5a . ?5x) ?5y)
+
+This unification fails!  We want ?4x = (?5a . ?5x), but the frame tells us
+that ?4x is empty.
+
+This is why forward reverse doesn't get into an infinite loop: QEVAL notices
+that the recursive rule can't apply when we get past the number of elements
+in the original list.
+
+----------
+
+That's the end of the analysis of what's wrong.  The recursive rule is
+supposed to say "the reverse of my known length-N list (?a . ?x) can be
+computed if we first take the reverse of a list of length N-1, namely ?x."
+But when run backwards it instead says "the reverse of my known list ?y
+consists of a (first) element ?1a followed by a list consisting of an
+element ?2a followed by a list consisting of an element ?3a followed ..."
+
+We don't have this problem running the rules forwards because the rule
+takes our known list and divides it into car and cdr, so we find out as
+soon as we run out of list elements.  The algorithm doesn't require us
+to divide the second list, ?y, into pieces, and the cdr of ?y isn't useful
+in doing the recursion -- we need all of ?y.  So we'll add an extra
+variable whose only purpose is to count down the length of ?y:
+
+(assert! (rule (reverse ?x ?y)
+	       (reverse-help ?x ?y ?y)))
+
+(assert! (rule (reverse-help (?a . ?x) ?y (?ignore . ?counter))
+	       (and (reverse-help ?x ?z ?counter)
+		    (append ?z (?a) ?y))))
+
+(assert! (rule (reverse-help () () ())))
+
+On each recursive invocation of the REVERSE-HELP rule, ?COUNTER gets
+smaller.  When it's empty, no more recursions are possible, because an
+empty list can't match (?ignore . ?counter).
+
+For forwards queries, the whole counter mechanism is unhelpful, but it
+doesn't hurt.  It's the (?a . ?x) that prevents infinite recursion for
+forwards queries; the ?counter situation is just like the ?x situation
+we saw before for backwards queries -- in effect we get
+
+    ?1counter = (?2ignore . (?3ignore . (?4ignore . ?4counter)))
+
+after three invocations of the rule.  That could keep going on forever,
+but the values of ?1x, ?2x, etc., are *known* and therefore eventually
+one of them is empty and won't match the recursive rule.
+
+----------
+
+This solution, like the partial solution in the lecture notes, is based on
+the recursive-process Scheme procedure
+
+    (define (reverse seq)
+      (if (null? seq)
+	  '()
+	  (append (reverse (cdr seq)) (list (car seq)))))
+
+What if we start instead with the iterative-process version:
+
+    (define (reverse seq)
+      (define (iter seq result)
+	(if (null? seq)
+	    result
+	    (iter (cdr seq) (cons (car seq) result)))))
+
+We still have to add an extra counter variable to make this work as a
+both-ways logic program, in addition to the Scheme program's extra
+result variable:
+
+    (assert! (rule (reverse ?x ?y)
+		   (reverse-iter ?x () ?y ?y)))
+
+    (assert! (rule (reverse-iter (?a . ?x) ?result ?y (?b . ?counter))
+		   (reverse-iter ?x (?a . ?result) ?y ?counter)))
+
+    (assert! (rule (reverse-iter () ?y ?y ())))

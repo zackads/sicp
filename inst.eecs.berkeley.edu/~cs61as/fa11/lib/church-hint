@@ -1,0 +1,64 @@
+It's straightforward to invent addition, multiplication, and exponentiation
+of Church numerals using nothing but lambda.  You don't need recursion, and
+you shouldn't define multiplication as repeated addition, nor exponentiation
+as repeated multiplication.
+
+If you want to do subtraction, you'll need IF.  This, too, can be invented
+using nothing but lambda -- except that lambda calculus uses normal-order
+evaluation, and Scheme uses applicative-order evaluation.  This gets you in
+trouble, for the reasons you learned in the exercise about NEW-IF in the
+first chapter.  There are two ways to deal with this:
+
+	1.  Cheat, and use Scheme's IF.  The problem is still quite hard.
+
+	2.  You can get the effect of normal-order evaluation by wrapping
+	lambdas around the conditional expressions.  That is, where you'd
+	like to say
+			(my-if a b c)
+	you instead say
+			(my-if a (lambda () b) (lambda () c))
+	and then, in defining MY-IF, instead of
+			(define (my-if a b c)
+			  ... a ... b ... c ...)
+	you say
+			(define (my-if a b c)
+			  ... a ... (b) ... (c) ...)
+	Hint:  Before you can write MY-IF, you'll have to decide how to
+	represent TRUE and FALSE -- you only have lambda, not #T or #F.
+
+By the way, strictly speaking, you don't have DEFINE, either -- you're
+supposed to put the lambda expression that defines a function wherever you'd
+like to use the function's name.  But using DEFINE just as a shorthand for
+those lambda expressions isn't too bad of a cheat; what's really cheating is
+using DEFINE to allow recursive procedure calls.  (Instead you're supposed to
+use the Y combinator from week 2's Extra for Experts.)
+
+Once you have IF, you can define SUB-1, the analog for subtraction of the
+ADD-1 procedure in the book.  This is the hardest part; with SUB-1 it's easy
+to get subtraction in general.  Hint: My solution for SUB-1 uses the lambda
+implementation of pairs from exercise 2.4 (I named the procedures KONS, KAR,
+and KDR so as not to confuse them with the Scheme primitives).
+
+By the way, the natural numbers are not closed under subtraction; what should
+(SUB ZERO ONE) return?  You don't have to worry about this; you can assume
+that the first argument to SUB is at least as large as the second.  (My
+solution actually returns zero if the second argument is larger, but that's
+not a requirement.  Of course you could, if you wanted, extend this project
+still further by inventing a lambda-only representation for signed integers,
+then rationals, then reals -- well, no, not reals, actually; there are more
+real numbers than there are possible lambda expressions.  But you can do
+approximations of real numbers, just as actual computers do.)
+
+As you work on this project you'll benefit from this debugging helper:
+
+(define (try num)                       ; convert Church to
+  ((num (lambda (x) (+ x 1))) 0))       ; ordinary number
+
+You're not allowed to use this as part of your solution, but you can use it
+to try out your solution:
+
+	> (define two ...)
+	> (define three ...)
+	> (define (add x y) ...)
+	> (try (add two three))
+	5

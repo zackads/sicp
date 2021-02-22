@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>CS61AS Lab 6: Generic Operators</title>
+
+<!--#include virtual="header.html"-->
+
+</head>
+<body>
+
+<!--#include virtual="nav.html"-->
+
+<section id="intro">
+<hgroup class="section-title">
+<h1>Lab 6: Scheme1.scm and Generic Operators</h1>
+<h2>Generic Operators</h2>
+</hgroup>
+<p>In this lesson, we introduce <code>scheme1.scm</code>! Scheme-1 is a simple Scheme interpreter 
+written in Scheme. While it cannot do all the things STk can do, it does demonstrate the working
+parts you need in an interpreter, such as evaluating expressions (<code>eval-1</code>) and applying
+procedures to arguments (<code>apply-1</code>). <code>eval-1</code> takes a compound expression and
+reducing it to its simplest value. <code>apply-1</code> takes a procedure and some simple values and applies
+the procedure to those values to get a result.
+</p>
+<img src="eval-apply.gif" />
+<p>
+We also begin our exploration of generic operators, the idea where we have different types of data and
+each type of data is intelligent--they know how to manipulate themselves. Procedures then are "stupid"--they
+don't know anything about each of the data types and somehow it still works out. Because of this ignorance
+of data types and the ability to operate across different types, they are dubbed "generic".
+</p>
+</section>
+
+<section id="lab">
+<hgroup class="section-title">
+<h1>Labwork</h1>
+<h2>finish this during section</h2>
+</hgroup>
+
+<article>
+<h1>Exercise 1.</h1>
+<p>Load the <code>scheme-1</code> interpreter from the file</p>
+<pre><code>~cs61as/lib/scheme1.scm</code></pre>
+ 
+<p>To start the interpreter, type <code>(scheme-1)</code>. Familiarize 
+yourself with it by evaluating some expressions. Remember: you have 
+all the Scheme primitives for arithmetic and list manipulation; you 
+have <code>lambda</code> but not higher-order functions; you don't have <code>define</code>. 
+To stop the <code>scheme-1</code> interpreter and return to <code>STk</code>, just 
+evaluate an illegal expression, such as <code>()</code>. 
+</p> 
+
+<p class="do">1a. Trace in detail how a simple procedure call such as</p>
+<pre><code>((lambda (x) (+ x 3)) 5)</code></pre> 
+<p class="do">is handled in <code>scheme-1</code>.</p>
+ 
+<p class="do headroom">1b. Try inventing higher-order procedures;
+since you don't have <code>define</code> 
+you'll have to use the Y-combinator trick, like this: 
+</p>
+<pre><code>Scheme-1: ((lambda (f n)        ; this lambda is defining MAP 
+         ((lambda (map) (map map f n)) 
+          (lambda (map f n) 
+    (if (null? n) 
+        '() 
+        (cons (f (car n)) (map map f (cdr n))) )) )) 
+         first              ; here are the arguments to MAP 
+         '(the rain in spain)) 
+(t r i s) 
+</code></pre> 
+ 
+<p class="do headroom">1c. Since all the Scheme primitives are automatically available 
+in <code>scheme-1</code>, you might think you could use <code>STk</code>'s 
+primitive <code>map</code> function.  Try these examples: 
+</p>
+<pre><code>Scheme-1: (map first '(the rain in spain)) 
+Scheme-1: (map (lambda (x) (first x)) '(the rain in spain)) 
+</code></pre> 
+<p class="do headroom"> 
+Explain the results. 
+</p>
+<p class="do headroom">
+1d.  Modify the interpreter to add the <code>and</code> special form.  Test 
+your work.  Be sure that as soon as a false value is computed, your 
+<code>and</code> returns <code>#f</code> without evaluating any further arguments. 
+</p>
+</article>
+
+<article>
+<h1>Exercise 2.</h1>
+<a href="http://mitpress.mit.edu/sicp/full-text/book/book-Z-H-16.html#%25_thm_2.62">SICP ex. 2.62</a>
+<p>This will help:
+<a href="http://mitpress.mit.edu/sicp/full-text/book/book-Z-H-16.html#%_sec_2.3.3">SICP 2.3.3</a> 
+</p>
+</article>
+
+<article>
+<h1>Exercise 3.</h3>
+<p> 
+The file <code>~cs61as/lib/bst.scm</code> contains the binary 
+search tree procedures from SICP 2.3.3.  Using 
+<code>adjoin-set</code>, construct <a href="http://mitpress.mit.edu/sicp/full-text/book/book-Z-H-16.html#%_fig_2.16">the trees shown on page 156</a>.</p>
+</article>
+</section>
+<section>
+<hgroup class="section-title">
+<h1>Homework</h1>
+<h2>do this in section if possible; finish the rest at home</h2>
+</hgroup>
+<article>
+<h1>Exercise 4.</h1>
+<p class="do">Complete the following:</p>
+Abelson &amp; Sussman, exercises
+<a href="http://mitpress.mit.edu/sicp/full-text/book/book-Z-H-17.html#%25_thm_2.74">
+2.74, 2.75, 2.76</a>,
+<a href="http://mitpress.mit.edu/sicp/full-text/book/book-Z-H-18.html#%25_thm_2.77">
+2.77, 2.79, 2.80</a>,
+<a href="http://mitpress.mit.edu/sicp/full-text/book/book-Z-H-18.html#%25_thm_2.81">
+2.81, 2.83</a>
+</p><p> 
+Note: Some of these are thought-exercises; you needn't actually run any Scheme 
+programs for them!  (Some don't ask you to write procedures at all; 
+others ask for modifications to a program that isn't online.) 
+</p>
+</article>
+<article>
+<h1>Exercise 5.</h1>
+<p class="do"> 
+Write a <code>map</code> primitive for <code>scheme-1</code> (call it <code>map-1</code> so you and Scheme don't get confused about which is which) that works 
+correctly for all mapped procedures. 
+</p>
+</article>
+<article>
+<h1>Exercise 6.</h1>
+<p class="do">Modify the <code>scheme-1</code> interpreter 
+to add the <code>let</code> special form.  Hint: Like a procedure call, <code>let</code> 
+will have to use <code>substitute</code> to replace certain variables with their 
+values.  Don't forget to evaluate the expressions that provide those 
+values! 
+</p>
+</article>
+<article>
+<h1>Exercise 7.</h1>
+<p class="do">Do the following reading:</p>
+<ul>
+  <li><a href="http://inst.eecs.berkeley.edu/~cs61as/reader/aboveline.pdf">
+      OOP Above the line in course reader
+      </a></li>
+  <li><a href="http://www-inst.eecs.berkeley.edu/~cs61as/reader/notes.pdf" target="_blank">
+      Lecture Note 6 (starting from pg. 46)</a></li>
+</ul>
+</article>
+</section>
+
+<section id="extra">
+<hgroup class="section-title">
+<h1>Extra for Experts</h1>
+<h2>Do this if you want to. This is NOT for credit.</h2>
+</hgroup>
+
+<article>
+<h1>Exercise 8.</h1>
+<p>Another approach to the problem of type-handling is type inference. If, for instance,
+a procedure includes the expression (+ n k), one can infer that n and k have numeric
+values. Similarly, the expression (f a b) indicates that the value of f is a procedure.
+Write a procedure called inferred-types that, given a definition of a Scheme procedure
+as argument, returns a list of information about the parameters of the procedure. The
+information list should contain one element per parameter; each element should be a
+two-element list whose first element is the parameter name and whose second element is a word
+indicating the type inferred for the parameter. Possible types:</p>
+</article>
+<pre><code>
+? (the type can't be inferred)
+procedure (the parameter appeared as the first word in an unquoted expres-
+sion or as the first argument of map or every)
+number (the parameter appeared as an argument of +, -, max, or min)
+list (the parameter appeared as an argument of append or as the
+second argument of map or member)
+sentence-or-word (the parameter appeared as an argument of first, butfirst,
+sentence, or member?, or as the second argument of every)
+x (conflicting types were inferred)
+</code></pre>
+
+<p>
+You should assume for this problem that the body of the procedure to be examined does
+not contain any occurrences of if or cond, although it may contain arbitrarily nested and
+quoted expressions. (A more ambitious inference procedure both would examine a more
+comprehensive set of procedures and could infer conditions like ”nonempty list”.)
+Here’s an example of what your inference procedure should return.</p>
+<pre><code>(inferred-types
+’(define (foo a b c d e f)
+(f (append (a b) c ’(b c)) (+ 5 d) (sentence (first e) f)) ) )</code></pre>
+<p>should return</p>
+<pre><code>((a procedure) (b ?) (c list) (d number)
+(e sentence-or-word) (f x))</code></pre>
+<p>If you’re really ambitious, you could maintain a database of inferred argument types and
+use it when a procedure you’ve seen is invoked by another procedure you’re examining!
+</p>
+</section>
+
+
+<footer class="headroom"><!--QUICKFIX; FIX PROPERLY LATER-->
+<p>Ask on Piazza if you have questions on anything at all.</p>
+<!--<p><strong>Ominous warnings, if applicable.</strong><p>-->
+<p class="headroom">The End.</p>
+</footer>
+
+</body>
+</html>

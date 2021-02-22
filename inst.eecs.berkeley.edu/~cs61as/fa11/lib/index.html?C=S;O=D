@@ -1,0 +1,57 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+ <head>
+  <title>Index of /~cs61as/fa11/lib</title>
+ </head>
+ <body>
+<h1>Index of /~cs61as/fa11/lib</h1>
+  <table>
+   <tr><th valign="top"><img src="/icons/blank.gif" alt="[ICO]"></th><th><a href="?C=N;O=A">Name</a></th><th><a href="?C=M;O=A">Last modified</a></th><th><a href="?C=S;O=A">Size</a></th><th><a href="?C=D;O=A">Description</a></th></tr>
+   <tr><th colspan="5"><hr></th></tr>
+<tr><td valign="top"><img src="/icons/back.gif" alt="[PARENTDIR]"></td><td><a href="/~cs61as/fa11/">Parent Directory</a>       </td><td>&nbsp;</td><td align="right">  - </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="berkeley.scm">berkeley.scm</a>           </td><td align="right">2015-09-28 12:28  </td><td align="right"> 43K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="pokemon_data">pokemon_data</a>           </td><td align="right">2015-09-28 12:28  </td><td align="right"> 36K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="adv.text">adv.text</a>               </td><td align="right">2015-09-28 12:28  </td><td align="right"> 32K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="query.scm">query.scm</a>              </td><td align="right">2015-09-28 12:28  </td><td align="right"> 19K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="query.rkt">query.rkt</a>              </td><td align="right">2015-09-28 12:28  </td><td align="right"> 18K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="obj.rkt">obj.rkt</a>                </td><td align="right">2015-10-18 21:11  </td><td align="right"> 11K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="mceval.rkt">mceval.rkt</a>             </td><td align="right">2015-09-28 12:28  </td><td align="right"> 10K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="mceval.scm">mceval.scm</a>             </td><td align="right">2015-09-28 12:28  </td><td align="right"> 10K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="obj.scm">obj.scm</a>                </td><td align="right">2015-09-28 12:28  </td><td align="right">9.8K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="racket1.rkt">racket1.rkt</a>            </td><td align="right">2015-09-28 12:28  </td><td align="right">7.3K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="scheme1.scm">scheme1.scm</a>            </td><td align="right">2015-09-28 12:28  </td><td align="right">6.9K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="concurrency.scm">concurrency.scm</a>        </td><td align="right">2015-09-28 12:28  </td><td align="right">6.6K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="picture.rkt">picture.rkt</a>            </td><td align="right">2015-09-28 12:28  </td><td align="right">6.5K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="lazy.scm">lazy.scm</a>               </td><td align="right">2015-09-28 12:28  </td><td align="right">4.7K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/compressed.gif" alt="[   ]"></td><td><a href="berkeley.zip">berkeley.zip</a>           </td><td align="right">2015-10-21 00:10  </td><td align="right">4.7K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="picture-ascii.scm">picture-ascii.scm</a>      </td><td align="right">2015-09-28 12:28  </td><td align="right">4.3K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="analyze.scm">analyze.scm</a>            </td><td align="right">2015-09-28 12:28  </td><td align="right">3.8K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="picture.scm">picture.scm</a>            </td><td align="right">2015-09-28 12:28  </td><td align="right">3.7K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="mapreduce.txt">mapreduce.txt</a>          </td><td align="right">2015-09-28 12:28  </td><td align="right">3.2K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="church-hint">church-hint</a>            </td><td align="right">2015-09-28 12:28  </td><td align="right">3.0K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="labyrinth.scm">labyrinth.scm</a>          </td><td align="right">2015-09-28 12:28  </td><td align="right">2.8K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="adv-map">adv-map</a>                </td><td align="right">2015-09-28 12:28  </td><td align="right">2.7K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="env_stuff.scm">env_stuff.scm</a>          </td><td align="right">2015-09-28 12:28  </td><td align="right">2.7K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="animal.scm">animal.scm</a>             </td><td align="right">2015-09-28 12:28  </td><td align="right">1.8K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="test-obj.rkt">test-obj.rkt</a>           </td><td align="right">2015-10-18 21:11  </td><td align="right">1.6K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/text.gif" alt="[TXT]"></td><td><a href="calc.rkt">calc.rkt</a>               </td><td align="right">2015-09-28 12:28  </td><td align="right">1.0K</td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="calc.scm">calc.scm</a>               </td><td align="right">2015-09-28 12:28  </td><td align="right">875 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="bst.scm">bst.scm</a>                </td><td align="right">2015-09-28 12:28  </td><td align="right">710 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="serial.scm">serial.scm</a>             </td><td align="right">2015-09-28 12:28  </td><td align="right">542 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="tables.scm">tables.scm</a>             </td><td align="right">2015-09-28 12:28  </td><td align="right">441 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="trees.rkt">trees.rkt</a>              </td><td align="right">2015-09-28 12:28  </td><td align="right">416 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="data_directed_programming.rkt">data_directed_progra..&gt;</a></td><td align="right">2015-09-28 12:28  </td><td align="right">385 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="envdraw.stk">envdraw.stk</a>            </td><td align="right">2015-09-28 12:28  </td><td align="right">330 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/unknown.gif" alt="[   ]"></td><td><a href="test.rkt">test.rkt</a>               </td><td align="right">2015-09-28 12:28  </td><td align="right"> 73 </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/folder.gif" alt="[DIR]"></td><td><a href="schython/">schython/</a>              </td><td align="right">2015-12-06 13:21  </td><td align="right">  - </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/folder.gif" alt="[DIR]"></td><td><a href="pictures/">pictures/</a>              </td><td align="right">2015-12-07 14:57  </td><td align="right">  - </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/folder.gif" alt="[DIR]"></td><td><a href="old/">old/</a>                   </td><td align="right">2015-09-28 12:28  </td><td align="right">  - </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/folder.gif" alt="[DIR]"></td><td><a href="mapreduce/">mapreduce/</a>             </td><td align="right">2015-09-28 12:28  </td><td align="right">  - </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/folder.gif" alt="[DIR]"></td><td><a href="mapreduce-racket/">mapreduce-racket/</a>      </td><td align="right">2015-09-28 12:28  </td><td align="right">  - </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/folder.gif" alt="[DIR]"></td><td><a href="envdraw/">envdraw/</a>               </td><td align="right">2015-09-28 12:28  </td><td align="right">  - </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/folder.gif" alt="[DIR]"></td><td><a href="chatterbot/">chatterbot/</a>            </td><td align="right">2015-11-03 00:28  </td><td align="right">  - </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/folder.gif" alt="[DIR]"></td><td><a href="berkeley/">berkeley/</a>              </td><td align="right">2015-10-21 00:18  </td><td align="right">  - </td><td>&nbsp;</td></tr>
+<tr><td valign="top"><img src="/icons/folder.gif" alt="[DIR]"></td><td><a href="adventure/">adventure/</a>             </td><td align="right">2015-12-06 13:15  </td><td align="right">  - </td><td>&nbsp;</td></tr>
+   <tr><th colspan="5"><hr></th></tr>
+</table>
+</body></html>

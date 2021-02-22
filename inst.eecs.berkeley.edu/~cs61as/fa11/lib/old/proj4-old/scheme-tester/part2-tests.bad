@@ -1,0 +1,46 @@
+((infix ("print 2+3\n" . "? print 2+3\n5\n") ("print 2+3*4\n" . "? print 2+3*4\n20\n")
+        ("print 5+product 3 4\n" . "? print 5+product 3 4\n17\n")
+        ("print sum 2+3 4+5\n" . "? print sum 2+3 4+5\n14\n")
+        ("print 1*2*3*4\n" . "? print 1*2*3*4\n24\n")
+        ("print product 5 6+sum 2 3\n" . "? print product 5 6+sum 2 3\n55\n")) 
+ (scope ("make \"x 3\n" . "? make \"x 3\n")
+        ("to scope :x\nhelper 5\nend\n" . "? to scope :x\n-> helper 5\n-> end\n")
+        ("to helper :y\nprint (sentence :x :y)\nend\n" . 
+         "? to helper :y\n-> print (sentence :x :y)\n-> end\n")
+        ("scope 4\n" . "? scope 4\n4 5\n")) 
+ (fact ("to fact :x\nifelse :x=0 [output 1] [output :x * fact :x-1]\nend\n" . 
+        "? to fact :x\n-> ifelse :x=0 [output 1] [output :x * fact :x-1]\n-> end\n")
+       ("print fact 3\n" . "? print fact 3\n6\n")) 
+ (procs ("to stopper\nprint \"stopping\nstop\nprint \"dontprintme\nend\n" . 
+         "? to stopper\n-> print \"stopping\n-> stop\n-> print \"dontprintme\n-> end\n")
+        ("stopper\n" . "? stopper\nstopping\n")
+        ("to outputter\noutput 7\nprint \"donotprint\nend\n" . 
+         "? to outputter\n-> output 7\n-> print \"donotprint\n-> end\n")
+        ("print outputter\n" . "? print outputter\n7\n")
+        ("to foo\nprint 2\nprint 3\nend\n" . 
+         "? to foo\n-> print 2\n-> print 3\n-> end\n") ("foo\n" . "? foo\n2\n3\n")) 
+ (step ("to garply\ngoodbye>>>\ngoodbye\n") ("unstep \"garply\n" . 
+        "? unstep \"garply\n") ("garply\n" . "? garply\nhello\ngoodbye\n")) 
+ (step-rec ("to count :c\nif :c=:n [stop]\nprint :c\ncount :c+1\nend\n" . 
+            "? to count :c\n-> if :c=:n [stop]\n-> print :c\n-> count :c+1\n-> end\n")
+           ("to countup :n\ncount 1\nend\n" . "? to countup :n\n-> count 1\n-> end\n")
+           ("countup 10\n" . "? countup 10\n1\n2\n3\n4\n5\n6\n7\n8\n9\n")
+           ("step \"count\n" . "? step \"count\n")
+           ("countup 3\n\n\n\n\n\n\n\n" . 
+            "? countup 3\nif :c = :n [stop]>>>\nprint :c>>>\n1\ncount :c + 1>>>\nif :c = :n [stop]>>>\nprint :c>>>\n2\ncount :c + 1>>>\nif :c = :n [stop]>>>\n")
+           ("\n" . "? \n")) 
+ (test ("test \"true\n" . "? test \"true\n")
+       ("iftrue [print \"yes]\n" . "? iftrue [print \"yes]\nyes\n")
+       ("iffalse [print \"no]\n" . "? blah2\n")) 
+ (static ("to count :inc static :c 2+3\nmake \"c :c+:inc\nprint :c\nend\n" . 
+          "? to count :inc static :c 2+3\n-> make \"c :c+:inc\n-> print :c\n-> end\n")
+         ("count 20\n" . "? count 20\n25\n") ("count 1\n" . "? count 1\n26\n")) 
+ (monster ("test 1+1=2\n" . "? test 1+1=2\n")
+          ("to foo :a :b static :x 2*3+7 :y 7*9+sum 1 0\nmake \"x :x + :a\nmake \"y :y + :b\niftrue [print \"yay]\niffalse [print \"envirowned]\ntest \"false\niftrue [print [oh no]]\niffalse [print \"excellent]\ntest :x=13\niftrue [output se :x :y]\niffalse [stop]\nCRASH!\nend\n" . 
+           "? to foo :a :b static :x 2*3+7 :y 7*9+sum 1 0\n-> make \"x :x + :a\n-> make \"y :y + :b\n-> iftrue [print \"yay]\n-> iffalse [print \"envirowned]\n-> test \"false\n-> iftrue [print [oh no]]\n-> iffalse [print \"excellent]\n-> test :x=13\n-> iftrue [output se :x :y]\n-> iffalse [stop]\n-> CRASH!\n-> end\n")
+          ("print foo 0 0\n" . "? print foo 0 0\nyay\nexcellent\n13 64\n")
+          ("foo 1 7\n" . "? foo 1 7\nyay\nexcellent\n")
+          ("print foo -1 3\n" . "? print foo -1 3\nyay\nexcellent\n13 74\n")
+          ("step \"foo\n" . "? step \"foo\n")
+          ("print foo 0 7\n\n\n\n\n\n\n\n\n\n" . 
+           "? print foo 0 7\nmake \"x :x + :a>>>\nmake \"y :y + :b>>>\niftrue [print \"yay]>>>\nyay\niffalse [print \"envirowned]>>>\ntest \"false>>>\niftrue [print [oh no]]>>>\niffalse [print \"excellent]>>>\nexcellent\ntest :x = 13>>>\niftrue [output se :x :y]>>>\n13 81\n")))

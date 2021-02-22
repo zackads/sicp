@@ -1,0 +1,99 @@
+MAPREDUCE NOTES
+
+To run mapreduce, you must be connected to the cluster. To do this from the 
+lab, type into a terminal:
+
+ssh -X icluster1
+or
+ssh -X cs61a-**@icluster1.eecs.berkeley.edu
+
+Where ** should be replaced with your login. When connecting from
+home, instead of connecting to star.cs.berkeley.edu , you should
+connect to icluster1.eecs.berkeley.edu . The -X is optional and will
+let you run graphical windows (such as emacs).
+
+The mapreduce program takes four arguments: a mapper, a reducer, a base case
+for the reducer, and a data input. The input can be either the name of a
+distributed text file (see below for some files) or the output of a previous
+mapreduce call.
+
+Mapreduce returns a stream of key-value pairs. 
+
+If you forget to save the output of mapreduce, you can always run
+(get-last-mapreduce-output) or (glmo), both of which return the last 
+stream mapreduce returned.
+
+Here are some sample files:
+
+"/beatles-songs"         This one is small and has all Beatles song names
+"/gutenberg/shakespeare" The collected works of William Shakespeare
+"/gutenberg/dickens"     The collected works of Charles Dickens
+"/sample-emails"         Some sample email data for the HW
+"/large-emails"		 A much larger sample email dataset. Only use this
+			 if you're willing to wait a while.
+
+The input files come in to your mapper as key/value pairs. The keys are 
+document names (e.g. 'hamlet) and the values are lines of text (represented
+as lists, e.g. '(to be or not to be)).
+
+For the email data, each line has the following format:
+(FROM TO SUBJECT BODY) 
+
+Finally, if you want to make sure your code will work on icluster, you 
+can first test it locally using a non-parallel version of mapreduce:
+
+ ~cs61a/lib/localmr.scm
+
+Right now you can try it out on "/sample-emails" or "/beatles-songs".
+
+MISCELLANEOUS
+
+If you want to see how many people are using mapreduce, you can go to
+http://icluster1.eecs.berkeley.edu:35702/
+
+If you want to see interesting statistics about the cluster and how it's
+being used, you can go to
+http://monitor.millennium.berkeley.edu/?r=hour&s=descending&c=Instructional%2520Cluster
+
+
+UPDATES:
+-------
+
+- mapreduce streams now print just like normal streams! Of course, you'll
+  still use stream-car, stream-cdr, show-stream, etc.
+
+- Problems with sorting have been fixed: the output from mapreduce will now
+  be properly sorted.
+
+- A bug with reusing the output of a mapreduce with cons was fixed (it used
+  to display 'unknown error')
+
+- A rare bug caused by unusual punctuation was fixed (it used to display
+  'unknown error')
+
+- As always, send any unhelpful error messages or 'unknown error's to
+  cs61a-te@imail.eecs.berkeley.edu
+
+PUNCTUATION
+
+You can now use strip-punctuation to remove punctuation from a word. Can you
+think about how you would write this function?
+
+RETRIEVING OUTPUTS FROM PREVIOUS CALLS TO MAPREDUCE:
+
+When mapreduce is called, it will now print out an ID number:
+
+STK> (mapreduce ...)
+Mapreduce in progress! Your ID number is 9001.
+Working......
+
+You can now retrieve the output of any previous call to mapreduce as
+long as you know the ID number. 
+
+(get-old-mapreduce-output <ID-NUMBER>)
+
+For example,
+STk> (get-old-mapreduce-output 9001)
+
+get-old-mapreduce-output is abbreviated as gomo.
+get-last-mapreduce-output, or glmo, still works just like it did before.
