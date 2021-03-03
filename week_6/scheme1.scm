@@ -68,10 +68,13 @@
              (eval-1 (cadddr exp))))
         ((and-exp? exp) (and-1 (cdr exp)))
         ((lambda-exp? exp) exp)
-        ((pair? exp) (apply-1 (eval-1 (car exp))      ; eval the operator
+        ((let-exp? exp) (let-1 exp))
+        ((map-exp? exp) (map-1 (eval-1 (cadr exp)) (eval-1 (caddr exp))))
+        ((pair-1? exp) (apply-1 (eval-1 (car exp))      ; eval the operator
                               (map eval-1 (cdr exp))))
         (else (error "bad expr: " exp))))
 
+(define pair-1? pair?)
 
 ;; Comments on APPLY-1:
 
@@ -100,12 +103,35 @@
                              '())))	    ; bound-vars, see below
         (else (error "bad proc: " proc))))
 
+                 ;(let ((formal-parameter (actual-argument)) (formal-parameter (actual-argument))) (body))
+                 ;((lambda (formal-parameter formal-parameter) (body)) (actual-argument actual-argument))
+
 ;; Exercise 1d - and special form
 (define (and-1 subexps)
   (cond ((null? subexps) #t)
         ((null? (cdr subexps)) (eval-1 (car subexps)))
         ((equal? (eval-1 (car subexps)) #f) #f)
         (else (and-1 (cdr subexps)))))
+
+;; Exercise 5 - map special form
+(define (map-1 fn seq)
+  (if (null? seq)
+      '()
+      (cons (apply-1 fn (list (car seq)))
+	    (map-1 fn (cdr seq)))))
+      
+;; Exercise 6 - let special form
+(define (let-names exp)
+  (map car (cadr exp)))
+
+(define (let-values exp)
+  (map cadr (cadr exp)))
+
+(define let-body caddr)
+  
+(define (let-1 exp)
+  (eval-1 (cons (list 'lambda (let-names exp) (let-body exp))
+		(let-values exp))))
 
 ;; Some trivial helper procedures:
 
@@ -119,7 +145,10 @@
 (define if-exp? (exp-checker 'if))
 (define and-exp? (exp-checker 'and))
 (define lambda-exp? (exp-checker 'lambda))
+(define map-exp? (exp-checker 'map))
+(define let-exp? (exp-checker 'let))
 
+(let ((x (+ 1 6)) (y (+ 1 8))) (+ x y))
 
 ;; SUBSTITUTE substitutes actual arguments for *free* references to the
 ;; corresponding formal parameters.  For example, given the expression
@@ -223,3 +252,8 @@
 ;	      first
 ;	      '(the rain in spain))
 ; (t r i s)
+
+(set! eval-1 eval-1)
+(set! apply-1 apply-1)
+(set! pair-1? pair-1?)
+(trace pair-1? eval-1 apply-1)

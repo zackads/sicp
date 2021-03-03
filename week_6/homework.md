@@ -407,3 +407,95 @@ Because:
 > `map`ping `first` over a list in Scheme-1
 
 **Exercise 1d** - Modify the interpreter to add the `and` special form. Test your work. Be sure that as soon as a `false` value is computed, your `and` returns `#f` without evaluating any further arguments.
+
+> Add `and` condition to `eval-1`:
+>
+> ```scheme
+> (define (eval-1 exp)
+>  (cond ((constant? exp) exp)
+>        ((symbol? exp) (eval exp))	; use underlying Scheme's EVAL
+>        ((quote-exp? exp) (cadr exp))
+>        ((if-exp? exp)
+>         (if (eval-1 (cadr exp))
+>             (eval-1 (caddr exp))
+>             (eval-1 (cadddr exp))))
+>        ((and-exp? exp) (and-1 (cdr exp)))
+>        ((lambda-exp? exp) exp)
+>        ((pair? exp) (apply-1 (eval-1 (car exp))      ; eval the operator
+>                              (map eval-1 (cdr exp))))
+>        (else (error "bad expr: " exp))))
+> ```
+>
+> With a mutually recursive function `and-1` to handle the special form:
+>
+> ```scheme
+> (define (and-1 subexps)
+>  (cond ((null? subexps) #t)
+>        ((null? (cdr subexps)) (eval-1 (car subexps)))
+>        ((equal? (eval-1 (car subexps)) #f) #f)
+>        (else (and-1 (cdr subexps)))))
+> ```
+
+**Exercise 2 (SICP Exercise 2.62)** - Give a Θ(n) implementation of union-set for sets represented as ordered lists.
+
+> See `union-set.scm`:
+>
+> ```scheme
+> (define (union-set set1 set2)
+>  (cond ((null? set1) set2)
+>        ((null? set2) set1)
+>        (else (let ((x1 (car set1)) (x2 (car set2)))
+>                (cond ((= x1 x2) (cons x1 (union-set (cdr set1) (cdr set2))))
+>                      ((< x1 x2) (cons x1 (union-set (cdr set1) set2)))
+>                      ((> x1 x2) (cons x1 (union-set set1 (cdr set2)))))))))
+> ```
+
+**Exercise 3** - The file ~cs61as/lib/bst.scm contains the binary search tree procedures from SICP 2.3.3. Using adjoin-set, construct the trees shown on page 156.
+
+> See `bst.scm`
+>
+> ```scheme
+> ; Left-hand tree
+> (adjoin-set 11 (adjoin-set 5 (adjoin-set 1 (adjoin-set 9 (adjoin-set 3 (adjoin-set 7 null))))))
+>
+> ; Centre tree
+> (adjoin-set 11 (adjoin-set 9 (adjoin-set 5 (adjoin-set 7 (adjoin-set 1 (adjoin-set 3 null))))))
+>
+> ; Right-hand tree
+> (adjoin-set 11 (adjoin-set 7 (adjoin-set 1 (adjoin-set 9 (adjoin-set 3 (adjoin-set 5 null))))))
+> ```
+
+**Exercise 5** - Write a `map` primitive for scheme-1 (call it map-1 so you and Scheme don't get confused about which is which) that works correctly for all mapped procedures.
+
+> See `scheme1.scm`
+
+Add the following to the `eval-1` `cond` expression:
+
+```scheme
+; ...
+((map-exp? exp) (map-1 (eval-1 (cadr exp)) (eval-1 (caddr exp))))
+; ...
+```
+
+And define special form `map-1`:
+
+```scheme
+(define (map-1 fn seq)
+  (if (null? seq)
+      '()
+      (cons (apply-1 fn (list (car seq)))
+	    (map-1 fn (cdr seq)))))
+```
+
+**Exercise 6** - Modify the `scheme-1` interpreter to add the `let` special form. Hint: Like a procedure call, `let` will have to use `substitute` to replace certain variables with their values. Don't forget to evaluate the expressions that provide those values!
+
+- `apply-1` must have a condition to handle let expressions and call substite for them.
+- `let-1`
+
+Test let expression:
+
+```scheme
+(let ((x (+ 2 4)) (y (- 8 6))) (+ x y))
+((lambda (x y) (+ x y)) (+ 2 4) (- 8 6))
+; expect 8
+```
