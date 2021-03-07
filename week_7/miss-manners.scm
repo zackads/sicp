@@ -6,8 +6,8 @@
   (method (ask stuff) (ask self 'say (se '(would you please) stuff)))
   (method (greet) (ask self 'say (se '(hello my name is) name))) )
 
-(define-class (miss-manners object)
-  (method (please message argument) (ask object message argument)))
+
+
 
 (define ZA (instantiate person 'Zack))
 (define fussy-ZA (instantiate miss-manners ZA))
