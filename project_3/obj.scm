@@ -24,26 +24,10 @@
 ; argument values.
 
 (define (ask object message . args)
-  (if (object? object)
-      (let ((method (object message)))
-	(if (method? method)
-	    (apply method args)
-	    (error "No method " message " in class " (cadr method))))
-      (error "Not an object: " object) ))
-
-; An object is a compound procedure with a single argument.
-; (Really, an object is a dispatch procedure, but we can't look inside
-; the definition to make sure it always returns a procedure or
-; a NO-METHOD marker.)
-; We use the STk-specific WITH-MODULE to make sure we get the built-in
-; version of PROCEDURE-BODY (also an STkism), rather than an override.
-(define (object? obj)
-  (and (procedure? obj)
-        (let ((lambda-exp ((with-module scheme procedure-body) obj)))
-	 (and lambda-exp
-	      (let ((args (cadr lambda-exp)))
-		(and (list? args)
-		     (= 1 (length args)) ))))))
+  (let ((method (object message)))
+    (if (method? method)
+	(apply method args)
+	(error "No method " message " in class " (cadr method)))))
 
 (define (no-method name)
   (list 'no-method name))
