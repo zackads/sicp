@@ -1,4 +1,4 @@
-# CS61A - Week 6 Homework
+# CS61A - Week 7 Homework
 
 ## Question 1 - Random number generator
 
