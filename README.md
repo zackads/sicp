@@ -66,16 +66,16 @@ Tasks roughly copied from [this repo](https://github.com/theurere/berkeley_cs61a
 - [x] 8. Assignment and state - Lecture 21
 - [x] 8. Environments - Lecture 22
 - [x] 8. Environments - Lecture 23
-- [ ] 8. Assignment, state, environments - Homework
-- [ ] Project 3a
-- [ ] 9. Mutable data, vectors - Reading (SICP 3.3.1-3)
-- [ ] 9. Mutable data - Lecture 24
-- [ ] 9. Mutable data - Lecture 25
-- [ ] 9. Vectors - Lecture 26
+- [x] 8. Assignment, state, environments - Homework
+- [-] Project 3a
+- [x] 9. Mutable data, vectors - Reading (SICP 3.3.1-3)
+- [x] 9. Mutable data - Lecture 24
+- [x] 9. Mutable data - Lecture 25
+- [x] 9. Vectors - Lecture 26
 - [ ] 9. Mutable data, vectors - Homework
 - [ ] Project 3b
 - [ ] 10. Client/server, concurrency - Reading (SICP 3.4)
-- [ ] 10. Client/server - Lecture 30
+- [ ] 10. Client/server - Lecture 30 (30 minutes through)
 - [ ] 10. Concurrency - Lecture 31
 - [ ] 10. Concurrency - Lecture 32
 - [ ] 10. Client/server, concurrency - Homework

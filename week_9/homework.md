@@ -40,4 +40,20 @@ Show that this procedure is not correct. In particular, draw box-and-pointer dia
 
 Devise a correct version of the count-pairs procedure of Exercise 3.16 that returns the number of distinct pairs in any structure. (Hint: Traverse the structure, maintaining an auxiliary data structure that is used to keep track of which pairs have already been counted.)
 
+> See `count-pairs-correct.scm`:
+>
+> ```scheme
+> (define (count-pairs x)
+> (define unique-pairs '())
+> (define (count y)
+> (if (or (not (pair? y)) (member y unique-pairs))
+> 0
+> (begin
+> (set! unique-pairs (append (list y) unique-pairs))
+> (+ (count (car y))
+> (count (cdr y))
+> 1))))
+> (count x))
+> ```
+
 ## Abelson & Sussman, exercises 3.16, 3.17, 3.21, 3.25, 3.27
