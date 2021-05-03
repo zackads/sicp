@@ -75,9 +75,9 @@ Tasks roughly copied from [this repo](https://github.com/theurere/berkeley_cs61a
 - [x] 9. Mutable data, vectors - Homework
 - [-] Project 3b
 - [x] 10. Client/server, concurrency - Reading (SICP 3.4)
-- [x] 10. Client/server - Lecture 30 (30 minutes through)
-- [ ] 10. Concurrency - Lecture 31
-- [ ] 10. Concurrency - Lecture 32
+- [x] 10. Client/server - Lecture 30
+- [x] 10. Concurrency - Lecture 31
+- [x] 10. Concurrency - Lecture 32
 - [ ] 10. Client/server, concurrency - Homework
 - [ ] 11. Streams, Therac-25 - Reading (SICP 3.5.1-3, 3.5.5, Therac-25 paper)
 - [ ] 11. Streams - Lecture 33
@@ -85,3 +85,17 @@ Tasks roughly copied from [this repo](https://github.com/theurere/berkeley_cs61a
 - [ ] 11. Therac-25 - Lecture 35
 - [ ] 11. Streams, Therac-25 - Homework
 - [ ] Exam - Midterm 3
+- [ ] 12. Metacircular evaluation, mapreduce - Reading (SICP 4.1.1–6)
+- [ ] 12. Metacircular evaluation - Lecture 36
+- [ ] 12. Mapreduce - Lecture 37
+- [ ] 12. Metacircular evaluation, mapreduce - Homework
+- [ ] 13. Mapreduce, analyzing, lazy evals - Reading (SICP 4.1.7, 4.2)
+- [ ] 13. Mapreduce - Lecture 38
+- [ ] 13. Analyzing, lazy evals - Lecture 39
+- [ ] 13. Mapreduce, analyzing, lazy evals - Homework
+- [ ] Project 4a
+- [ ] 14. Logic programming - Reading (SICP 4.4.1-3)
+- [ ] 14. Logic programming - Lecture 40
+- [ ] 14. Review - Lecture 41
+- [ ] Project 4b
+- [ ] Final
