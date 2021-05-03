@@ -72,10 +72,10 @@ Tasks roughly copied from [this repo](https://github.com/theurere/berkeley_cs61a
 - [x] 9. Mutable data - Lecture 24
 - [x] 9. Mutable data - Lecture 25
 - [x] 9. Vectors - Lecture 26
-- [ ] 9. Mutable data, vectors - Homework
-- [ ] Project 3b
-- [ ] 10. Client/server, concurrency - Reading (SICP 3.4)
-- [ ] 10. Client/server - Lecture 30 (30 minutes through)
+- [x] 9. Mutable data, vectors - Homework
+- [-] Project 3b
+- [x] 10. Client/server, concurrency - Reading (SICP 3.4)
+- [x] 10. Client/server - Lecture 30 (30 minutes through)
 - [ ] 10. Concurrency - Lecture 31
 - [ ] 10. Concurrency - Lecture 32
 - [ ] 10. Client/server, concurrency - Homework
