@@ -78,13 +78,13 @@ Tasks roughly copied from [this repo](https://github.com/theurere/berkeley_cs61a
 - [x] 10. Client/server - Lecture 30
 - [x] 10. Concurrency - Lecture 31
 - [x] 10. Concurrency - Lecture 32
-- [ ] 10. Client/server, concurrency - Homework
-- [ ] 11. Streams, Therac-25 - Reading (SICP 3.5.1-3, 3.5.5, Therac-25 paper)
-- [ ] 11. Streams - Lecture 33
-- [ ] 11. Streams - Lecture 34
-- [ ] 11. Therac-25 - Lecture 35
-- [ ] 11. Streams, Therac-25 - Homework
-- [ ] Exam - Midterm 3
+- [x] 10. Client/server, concurrency - Homework
+- [x] 11. Streams, Therac-25 - Reading (SICP 3.5.1-3, 3.5.5, Therac-25 paper)
+- [x] 11. Streams - Lecture 33
+- [x] 11. Streams - Lecture 34
+- [x] 11. Therac-25 - Lecture 35
+- [x] 11. Streams, Therac-25 - Homework
+- [-] Exam - Midterm 3
 - [ ] 12. Metacircular evaluation, mapreduce - Reading (SICP 4.1.1–6)
 - [ ] 12. Metacircular evaluation - Lecture 36
 - [ ] 12. Mapreduce - Lecture 37
