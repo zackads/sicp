@@ -2,7 +2,7 @@
 
 ## What are CS61A and SICP?
 
-CS61A is an undergraduate computer science course taught at the University of California Berkeley. The 2011 course taught by Brian Harvey is [recommended](https://eu.small-improvements.com/app/objectives/g0d7VX8qzbLHJMsVXfTZtw/teachyourselfcs.com) as a high-quality resource to learn the fundamental concepts of programming in depth. It uses [Structure and Interpretation of Computer Programs](https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book.html) (SICP, or "the wizard book") as its textbook.
+CS61A is an undergraduate computer science course taught at the University of California Berkeley. The 2011 course taught by Brian Harvey is [recommended](https://teachyourselfcs.com/#programming) as a high-quality resource to learn the fundamental concepts of programming in depth. It uses [Structure and Interpretation of Computer Programs](https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book.html) (SICP, or "the wizard book") as its textbook.
 
 This objective comprises reading from SICP, pre-recorded video lectures, homework assignments, projects and an exam.
 
